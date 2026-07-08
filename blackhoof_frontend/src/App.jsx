@@ -12,6 +12,8 @@ import Products from './pages/Products';
 import ProductForm from './pages/ProductForm';
 import AdminCatalogue from './pages/AdminCatalogue';
 import BlogCategories from './pages/BlogCategories';
+import Blogs from './pages/Blogs';
+import BlogForm from './pages/BlogForm';
 
 import CataloguePreview from './pages/CataloguePreview';
 
@@ -40,6 +42,9 @@ function App() {
             <Route path="catalogue" element={<AdminCatalogue />} />
             <Route path="catalogue/preview" element={<CataloguePreview />} />
             <Route path="blog-categories" element={<BlogCategories />} />
+            <Route path="blogs" element={<Blogs />} />
+            <Route path="blogs/create" element={<BlogForm />} />
+            <Route path="blogs/edit/:id" element={<BlogForm />} />
           </Route>
 
           {/* Default Route */}

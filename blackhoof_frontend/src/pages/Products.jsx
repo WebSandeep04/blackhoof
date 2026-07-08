@@ -66,28 +66,26 @@ export default function Products() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input 
-                            type="text"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
-                        />
+            <div className="flex justify-end items-center gap-4">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
                     </div>
-                    <Link 
-                        to="/admin/products/create"
-                        className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-hover transition shadow-sm font-medium flex items-center gap-2"
-                    >
-                        <Plus className="w-5 h-5" /> Add Product
-                    </Link>
+                    <input 
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
+                    />
                 </div>
+                <Link 
+                    to="/admin/products/create"
+                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                    title="Add Product"
+                >
+                    <Plus className="w-5 h-5" />
+                </Link>
             </div>
 
             <DataTable 

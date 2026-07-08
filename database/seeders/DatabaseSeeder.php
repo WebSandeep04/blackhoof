@@ -13,6 +13,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\BlogCategory;
+use App\Models\Blog;
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,12 +30,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 1.5 Generate Blog Categories
+        $blogCategoryModels = [];
         $blogCategories = ['Technology', 'Lifestyle', 'Health', 'Travel', 'Food', 'Business', 'Education', 'Entertainment', 'Sports', 'Fashion'];
         foreach ($blogCategories as $cat) {
-            BlogCategory::create([
+            $blogCategoryModels[] = BlogCategory::create([
                 'name' => $cat,
                 'slug' => Str::slug($cat),
                 'description' => "All posts related to $cat"
+            ]);
+        }
+
+        // 1.6 Generate Dummy Blogs
+        foreach (range(1, 20) as $i) {
+            $title = "Sample Blog Post $i - " . Str::random(5);
+            Blog::create([
+                'title' => $title,
+                'slug' => Str::slug($title),
+                'content' => "<p>This is the content for <strong>$title</strong>. It supports HTML content because we are using a rich text editor.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>",
+                'blog_category_id' => $blogCategoryModels[array_rand($blogCategoryModels)]->id,
+                'status' => rand(0, 1)
             ]);
         }
 

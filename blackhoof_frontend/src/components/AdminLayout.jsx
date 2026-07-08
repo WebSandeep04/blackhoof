@@ -56,6 +56,7 @@ export default function AdminLayout() {
                 { name: 'Categories', href: '/admin/categories', icon: ListTree },
                 { name: 'Attributes', href: '/admin/attributes', icon: Tags },
                 { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText },
+                { name: 'Blogs', href: '/admin/blogs', icon: FileText },
             ]
         },
         {
