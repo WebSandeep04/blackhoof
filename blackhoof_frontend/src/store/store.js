@@ -8,6 +8,7 @@ import productsReducer from './slices/productsSlice';
 import catalogueReducer from './slices/catalogueSlice';
 import catalogueCartReducer from './slices/catalogueCartSlice';
 import savedCataloguesReducer from './slices/savedCataloguesSlice';
+import blogCategoriesReducer from './slices/blogCategoriesSlice';
 
 export const store = configureStore({
     reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
         catalogue: catalogueReducer,
         catalogueCart: catalogueCartReducer,
         savedCatalogues: savedCataloguesReducer,
+        blogCategories: blogCategoriesReducer,
     },
 });

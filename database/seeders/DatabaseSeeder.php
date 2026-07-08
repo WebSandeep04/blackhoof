@@ -12,6 +12,7 @@ use App\Models\ProductImage;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\BlogCategory;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,6 +27,16 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AdminUserSeeder::class,
         ]);
+
+        // 1.5 Generate Blog Categories
+        $blogCategories = ['Technology', 'Lifestyle', 'Health', 'Travel', 'Food', 'Business', 'Education', 'Entertainment', 'Sports', 'Fashion'];
+        foreach ($blogCategories as $cat) {
+            BlogCategory::create([
+                'name' => $cat,
+                'slug' => Str::slug($cat),
+                'description' => "All posts related to $cat"
+            ]);
+        }
 
         // 2. Generate 10 Parent Categories
         $parentCategories = Category::factory()->count(10)->create();

@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductController;
 
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\SavedCatalogueController;
+use App\Http\Controllers\BlogCategoryController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -36,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('attributes', AttributeController::class);
         Route::apiResource('products', ProductController::class);
+        Route::apiResource('blog-categories', BlogCategoryController::class);
         
         // Saved Catalogues management
         Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
