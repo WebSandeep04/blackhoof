@@ -16,6 +16,11 @@ export default function ProductForm() {
     const { flatCategories } = useSelector(state => state.categories);
     const { flatAttributes } = useSelector(state => state.attributes);
     const { currentProduct, loading: productLoading } = useSelector(state => state.products);
+    const { user } = useSelector(state => state.auth);
+
+    const hasPermission = (permission) => {
+        return user?.permissions?.includes(permission);
+    };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -314,92 +319,74 @@ export default function ProductForm() {
                 {/* Main Content Column */}
                 <div className="flex-1 space-y-6">
                     {/* Basic Info Card */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                    <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Basic Information</h2>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
-                        </div>
-                    </div>
+                    {hasPermission('create/edit product basic info') && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Basic Information</h2>
+                            
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+                                    <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
+                                </div>
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
-                            <textarea value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows="3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                                <textarea value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows="3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows="6" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
-                            <textarea value={description} onChange={e => setDescription(e.target.value)} rows="6" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
-                        </div>
-                    </div>
+                    )}
 
                 {/* Images Card */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                    <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product Images</h2>
-                    
-                    <div className="flex flex-wrap gap-4 mb-4">
-                        {/* Existing Images */}
-                        {existingImages.map(img => (
-                            <div key={img.id} className="relative w-24 h-24 border rounded-lg overflow-hidden group">
-                                <img src={img.url} alt="Product" className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeExistingImage(img.id)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                    <Trash2 className="w-6 h-6" />
-                                </button>
-                                {img.is_main && <span className="absolute bottom-0 inset-x-0 bg-brand-primary text-white text-[10px] text-center py-0.5">Main</span>}
-                            </div>
-                        ))}
+                {hasPermission('create/edit product images') && (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product Images</h2>
+                        
+                        <div className="flex flex-wrap gap-4 mb-4">
+                            {/* Existing Images */}
+                            {existingImages.map(img => (
+                                <div key={img.id} className="relative w-24 h-24 border rounded-lg overflow-hidden group">
+                                    <img src={img.url} alt="Product" className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => removeExistingImage(img.id)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                        <Trash2 className="w-6 h-6" />
+                                    </button>
+                                    {img.is_main && <span className="absolute bottom-0 inset-x-0 bg-brand-primary text-white text-[10px] text-center py-0.5">Main</span>}
+                                </div>
+                            ))}
 
-                        {/* New Images */}
-                        {imageFiles.map((file, index) => (
-                            <div key={index} className="relative w-24 h-24 border border-brand-primary/50 rounded-lg overflow-hidden group">
-                                <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeNewImage(index)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                    <X className="w-6 h-6" />
-                                </button>
-                                <span className="absolute bottom-0 inset-x-0 bg-brand-primary/80 text-white text-[10px] text-center py-0.5">New</span>
-                            </div>
-                        ))}
-                    </div>
+                            {/* New Images */}
+                            {imageFiles.map((file, index) => (
+                                <div key={index} className="relative w-24 h-24 border border-brand-primary/50 rounded-lg overflow-hidden group">
+                                    <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => removeNewImage(index)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                    <span className="absolute bottom-0 inset-x-0 bg-brand-primary/80 text-white text-[10px] text-center py-0.5">New</span>
+                                </div>
+                            ))}
+                        </div>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                        <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 font-medium">Click or drag images to upload</p>
-                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF up to 2MB</p>
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative">
+                            <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-600 font-medium">Click or drag images to upload</p>
+                            <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF up to 2MB</p>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Product Type & Pricing Card */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
-                    <div className="flex items-center justify-between border-b pb-2">
-                        <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
-                        {/* 
-                        <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-                            <button type="button" onClick={() => setHasVariants(false)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${!hasVariants ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Simple Product</button>
-                            <button type="button" onClick={() => setHasVariants(true)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${hasVariants ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Variable Product</button>
+                {hasPermission('create/edit product inventory') && (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                        <div className="flex items-center justify-between border-b pb-2">
+                            <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
                         </div>
-                        */}
-                    </div>
 
-                    {/* !hasVariants ? (
-                        // Simple Product Inputs
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Base Price ($) *</label>
-                                <input type="number" step="0.01" required={!hasVariants} value={simplePrice} onChange={e => setSimplePrice(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                                <input type="text" value={simpleSku} onChange={e => setSimpleSku(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity *</label>
-                                <input type="number" required={!hasVariants} value={simpleStock} onChange={e => setSimpleStock(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
-                            </div>
-                        </div>
-                    ) : */ (
-                        // Variable Product Matrix Builder
+                        {/* Variable Product Matrix Builder */}
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">1. Select Attributes to create variations</label>
@@ -482,94 +469,100 @@ export default function ProductForm() {
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
                 {/* Sidebar Column */}
                 <div className="w-full lg:w-1/3 space-y-6">
                     {/* Product For Card */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product For</h2>
-                        <div className="flex gap-4">
-                            <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'blackhoof' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
-                                <input type="radio" name="product_for" value="blackhoof" checked={productFor === 'blackhoof'} onChange={e => setProductFor(e.target.value)} className="hidden" />
-                                Blackhoof
-                            </label>
-                            <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'satkirti' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
-                                <input type="radio" name="product_for" value="satkirti" checked={productFor === 'satkirti'} onChange={e => setProductFor(e.target.value)} className="hidden" />
-                                Satkirti
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Settings Card */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Settings</h2>
-                        
-                        <div className="flex items-center justify-between pt-2">
-                            <span className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-gray-500'}`}>
-                                {isActive ? 'Published' : 'Draft'}
-                            </span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
-                            </label>
-                        </div>
-                        
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                            <span className={`text-sm font-medium ${includeInCatalogue ? 'text-brand-primary' : 'text-gray-500'}`}>
-                                {includeInCatalogue ? 'In Catalogue' : 'Hidden'}
-                            </span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={includeInCatalogue} onChange={e => setIncludeInCatalogue(e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Category Card */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Category</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Category</label>
-                            <div className="w-full max-h-72 overflow-y-auto rounded-lg bg-white">
-                                {(() => {
-                                    // Build tree and render hierarchical options
-                                    const buildTree = (cats, parentId = null) => {
-                                        return cats
-                                            .filter(c => c.parent_id === parentId)
-                                            .map(c => ({ ...c, children: buildTree(cats, c.id) }));
-                                    };
-                                    
-                                    const renderTreeOptions = (cats, level = 0) => {
-                                        return cats.map(cat => (
-                                            <div key={cat.id} className="flex flex-col">
-                                                <label className={`flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition hover:bg-gray-50 ${categoryId == cat.id ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700'}`} style={{ marginLeft: `${level * 1.5}rem` }}>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="category_id"
-                                                        value={cat.id}
-                                                        checked={categoryId == cat.id}
-                                                        onChange={e => setCategoryId(e.target.value)}
-                                                        className="w-4 h-4 text-brand-primary focus:ring-brand-primary border-gray-300 shrink-0"
-                                                    />
-                                                    <span className="text-sm">{cat.name}</span>
-                                                </label>
-                                                {cat.children && cat.children.length > 0 && (
-                                                    <div className="flex flex-col relative before:absolute before:left-[0.6rem] before:top-0 before:bottom-0 before:w-px before:bg-gray-200">
-                                                        {renderTreeOptions(cat.children, level + 1)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ));
-                                    };
-
-                                    return renderTreeOptions(buildTree(flatCategories));
-                                })()}
+                    {hasPermission('create/edit product for') && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product For</h2>
+                            <div className="flex gap-4">
+                                <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'blackhoof' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
+                                    <input type="radio" name="product_for" value="blackhoof" checked={productFor === 'blackhoof'} onChange={e => setProductFor(e.target.value)} className="hidden" />
+                                    Blackhoof
+                                </label>
+                                <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'satkirti' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
+                                    <input type="radio" name="product_for" value="satkirti" checked={productFor === 'satkirti'} onChange={e => setProductFor(e.target.value)} className="hidden" />
+                                    Satkirti
+                                </label>
                             </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Settings Card */}
+                    {hasPermission('create/edit product settings') && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Settings</h2>
+                            
+                            <div className="flex items-center justify-between pt-2">
+                                <span className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                    {isActive ? 'Published' : 'Draft'}
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                                </label>
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <span className={`text-sm font-medium ${includeInCatalogue ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                    {includeInCatalogue ? 'In Catalogue' : 'Hidden'}
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={includeInCatalogue} onChange={e => setIncludeInCatalogue(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Category Card */}
+                    {hasPermission('create/edit product category') && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Category</h2>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Select Category</label>
+                                <div className="w-full max-h-72 overflow-y-auto rounded-lg bg-white">
+                                    {(() => {
+                                        // Build tree and render hierarchical options
+                                        const buildTree = (cats, parentId = null) => {
+                                            return cats
+                                                .filter(c => c.parent_id === parentId)
+                                                .map(c => ({ ...c, children: buildTree(cats, c.id) }));
+                                        };
+                                        
+                                        const renderTreeOptions = (cats, level = 0) => {
+                                            return cats.map(cat => (
+                                                <div key={cat.id} className="flex flex-col">
+                                                    <label className={`flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition hover:bg-gray-50 ${categoryId == cat.id ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700'}`} style={{ marginLeft: `${level * 1.5}rem` }}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="category_id"
+                                                            value={cat.id}
+                                                            checked={categoryId == cat.id}
+                                                            onChange={e => setCategoryId(e.target.value)}
+                                                            className="w-4 h-4 text-brand-primary focus:ring-brand-primary border-gray-300 shrink-0"
+                                                        />
+                                                        <span className="text-sm">{cat.name}</span>
+                                                    </label>
+                                                    {cat.children && cat.children.length > 0 && (
+                                                        <div className="flex flex-col relative before:absolute before:left-[0.6rem] before:top-0 before:bottom-0 before:w-px before:bg-gray-200">
+                                                            {renderTreeOptions(cat.children, level + 1)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ));
+                                        };
+
+                                        return renderTreeOptions(buildTree(flatCategories));
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="pt-4">
                         <button type="submit" disabled={isSubmitting} className="w-full py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-hover transition font-medium text-lg flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20">

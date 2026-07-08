@@ -7,7 +7,11 @@ import Swal from 'sweetalert2';
 
 export default function Attributes() {
     const dispatch = useDispatch();
-    const { attributes, pagination, loading } = useSelector(state => state.attributes);
+    const { attributes, pagination, loading: attributesLoading } = useSelector(state => state.attributes);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = attributesLoading;
+    
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -161,13 +165,15 @@ export default function Attributes() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <button 
-                    onClick={() => openForm()}
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add Attribute"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
+                {hasPermission('create attributes') && (
+                    <button 
+                        onClick={() => openForm()}
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add Attribute"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {isFormOpen && (
@@ -266,11 +272,15 @@ export default function Attributes() {
                         header: 'Actions',
                         key: 'actions',
                         className: 'text-right',
-                        cellClassName: 'text-right space-x-3 w-24',
-                        render: (attribute) => (
+                        cellClassName: 'text-right space-x-3',
+                        render: (attr) => (
                             <>
-                                <button onClick={() => openForm(attribute)} className="text-brand-primary hover:text-brand-hover"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(attribute.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit attributes') && (
+                                    <button onClick={() => openForm(attr)} className="text-brand-primary hover:text-brand-hover" title="Edit Attribute"><Edit2 className="w-4 h-4 inline" /></button>
+                                )}
+                                {hasPermission('delete attributes') && (
+                                    <button onClick={() => handleDelete(attr.id)} className="text-red-600 hover:text-red-900" title="Delete Attribute"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }

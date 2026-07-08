@@ -7,8 +7,12 @@ import Swal from 'sweetalert2';
 
 export default function BlogCategories() {
     const dispatch = useDispatch();
-    const { categories, pagination, loading } = useSelector(state => state.blogCategories);
+    const { categories, pagination, loading: categoriesLoading } = useSelector(state => state.blogCategories);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = categoriesLoading;
     
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
@@ -117,13 +121,15 @@ export default function BlogCategories() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <button 
-                    onClick={() => openForm()}
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add Blog Category"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
+                {hasPermission('create blog categories') && (
+                    <button 
+                        onClick={() => openForm()}
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add Category"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {isFormOpen && (
@@ -161,10 +167,14 @@ export default function BlogCategories() {
                         key: 'actions',
                         className: 'text-right',
                         cellClassName: 'text-right space-x-3',
-                        render: (cat) => (
+                        render: (category) => (
                             <>
-                                <button onClick={() => openForm(cat)} className="text-brand-primary hover:text-brand-hover"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(cat.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit blog categories') && (
+                                    <button onClick={() => openForm(category)} className="text-brand-primary hover:text-brand-hover" title="Edit Category"><Edit2 className="w-4 h-4 inline" /></button>
+                                )}
+                                {hasPermission('delete blog categories') && (
+                                    <button onClick={() => handleDelete(category.id)} className="text-red-600 hover:text-red-900" title="Delete Category"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }

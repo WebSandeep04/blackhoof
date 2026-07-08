@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../store/slices/usersSlice';
 import { fetchRoles } from '../store/slices/rolesSlice';
-import { Edit2, Trash2, Plus, Search, Key } from 'lucide-react';
+import { Edit2, Trash2, Plus, Search, Key, Eye, EyeOff } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
 export default function Users() {
     const dispatch = useDispatch();
     const { users, pagination, loading: usersLoading } = useSelector(state => state.users);
     const { roles: rolesList, loading: rolesLoading } = useSelector(state => state.roles);
+    const { user: authUser } = useSelector(state => state.auth);
     const loading = usersLoading || rolesLoading;
     
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
     const [passwordData, setPasswordData] = useState({ id: null, password: '' });
@@ -18,6 +21,8 @@ export default function Users() {
     const [page, setPage] = useState(1);
     const [currentUser, setCurrentUser] = useState({ id: null, name: '', email: '', password: '', roles: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showChangePassword, setShowChangePassword] = useState(false);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -109,6 +114,7 @@ export default function Users() {
     const openForm = (user = { id: null, name: '', email: '', password: '', roles: [] }) => {
         const roles = user.roles ? user.roles.map(r => r.name) : [];
         setCurrentUser({ ...user, roles, password: '' });
+        setShowPassword(false);
         setIsFormOpen(true);
     };
 
@@ -121,6 +127,7 @@ export default function Users() {
 
     const openPasswordForm = (user) => {
         setPasswordData({ id: user.id, password: '' });
+        setShowChangePassword(false);
         setIsPasswordFormOpen(true);
     };
 
@@ -168,13 +175,15 @@ export default function Users() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <button 
-                    onClick={() => openForm()}
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add User"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
+                {hasPermission('create users') && (
+                    <button 
+                        onClick={() => openForm()}
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add User"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {isFormOpen && (
@@ -206,13 +215,22 @@ export default function Users() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Password
                                         </label>
-                                        <input 
-                                            type="password" 
-                                            required
-                                            value={currentUser.password}
-                                            onChange={(e) => setCurrentUser({ ...currentUser, password: e.target.value })}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                                        />
+                                        <div className="relative">
+                                            <input 
+                                                type={showPassword ? "text" : "password"} 
+                                                required
+                                                value={currentUser.password}
+                                                onChange={(e) => setCurrentUser({ ...currentUser, password: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none pr-10"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                                 <div>
@@ -251,13 +269,22 @@ export default function Users() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     New Password
                                 </label>
-                                <input 
-                                    type="password" 
-                                    required
-                                    value={passwordData.password}
-                                    onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showChangePassword ? "text" : "password"} 
+                                        required
+                                        value={passwordData.password}
+                                        onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none pr-10"
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowChangePassword(!showChangePassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showChangePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
                                 <button type="button" onClick={() => setIsPasswordFormOpen(false)} disabled={isSubmitting} className="px-5 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium disabled:opacity-50">Cancel</button>
@@ -291,9 +318,15 @@ export default function Users() {
                         cellClassName: 'text-right space-x-3',
                         render: (user) => (
                             <>
-                                <button onClick={() => openForm(user)} className="text-brand-primary hover:text-brand-hover" title="Edit User"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => openPasswordForm(user)} className="text-blue-600 hover:text-blue-900" title="Change Password"><Key className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900" title="Delete User"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit users') && (
+                                    <>
+                                        <button onClick={() => openForm(user)} className="text-brand-primary hover:text-brand-hover" title="Edit User"><Edit2 className="w-4 h-4 inline" /></button>
+                                        <button onClick={() => openPasswordForm(user)} className="text-blue-600 hover:text-blue-900" title="Change Password"><Key className="w-4 h-4 inline" /></button>
+                                    </>
+                                )}
+                                {hasPermission('delete users') && (
+                                    <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900" title="Delete User"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }

@@ -8,8 +8,12 @@ import { Link } from 'react-router-dom';
 
 export default function Products() {
     const dispatch = useDispatch();
-    const { products, pagination, loading } = useSelector(state => state.products);
+    const { products, pagination, loading: productsLoading } = useSelector(state => state.products);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = productsLoading;
     
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
 
@@ -79,13 +83,15 @@ export default function Products() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <Link 
-                    to="/admin/products/create"
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add Product"
-                >
-                    <Plus className="w-5 h-5" />
-                </Link>
+                {hasPermission('create products') && (
+                    <Link 
+                        to="/admin/products/create"
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add Product"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </Link>
+                )}
             </div>
 
             <DataTable 
@@ -142,8 +148,12 @@ export default function Products() {
                         cellClassName: 'text-right space-x-3',
                         render: (product) => (
                             <>
-                                <Link to={`/admin/products/edit/${product.id}`} className="text-brand-primary hover:text-brand-hover inline-block"><Edit2 className="w-4 h-4 inline" /></Link>
-                                <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit products') && (
+                                    <Link to={`/admin/products/edit/${product.id}`} className="text-brand-primary hover:text-brand-hover inline-block" title="Edit Product"><Edit2 className="w-4 h-4 inline" /></Link>
+                                )}
+                                {hasPermission('delete products') && (
+                                    <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-900" title="Delete Product"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }

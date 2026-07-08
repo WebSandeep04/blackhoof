@@ -7,7 +7,11 @@ import Swal from 'sweetalert2';
 
 export default function Categories() {
     const dispatch = useDispatch();
-    const { categories, flatCategories, pagination, loading } = useSelector(state => state.categories);
+    const { categories, flatCategories, pagination, loading: categoriesLoading } = useSelector(state => state.categories);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = categoriesLoading;
+    
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -161,13 +165,15 @@ export default function Categories() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <button 
-                    onClick={() => openForm()}
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add Category"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
+                {hasPermission('create categories') && (
+                    <button 
+                        onClick={() => openForm()}
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add Category"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {isFormOpen && (
@@ -266,8 +272,12 @@ export default function Categories() {
                         cellClassName: 'text-right space-x-3',
                         render: (category) => (
                             <>
-                                <button onClick={() => openForm(category)} className="text-brand-primary hover:text-brand-hover"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(category.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit categories') && (
+                                    <button onClick={() => openForm(category)} className="text-brand-primary hover:text-brand-hover" title="Edit Category"><Edit2 className="w-4 h-4 inline" /></button>
+                                )}
+                                {hasPermission('delete categories') && (
+                                    <button onClick={() => handleDelete(category.id)} className="text-red-600 hover:text-red-900" title="Delete Category"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }

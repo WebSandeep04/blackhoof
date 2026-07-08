@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSavedCatalogues, deleteSavedCatalogue } from '../store/slices/savedCataloguesSlice';
-import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid } from 'lucide-react';
+import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
 
 export default function AdminCatalogue() {
     const dispatch = useDispatch();
-    const { catalogues, pagination, loading } = useSelector((state) => state.savedCatalogues);
+    const { catalogues, pagination, loading: cataloguesLoading } = useSelector((state) => state.savedCatalogues);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = cataloguesLoading;
+    
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
+
     const [selectedCatalogue, setSelectedCatalogue] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -87,13 +92,15 @@ export default function AdminCatalogue() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <Link 
-                    to="/admin/catalogue/preview"
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Preview Storefront & Generate Catalogue"
-                >
-                    <LayoutGrid className="w-5 h-5" />
-                </Link>
+                {hasPermission('create saved catalogues') && (
+                    <Link 
+                        to="/admin/catalogue/preview"
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="Add Catalogue"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </Link>
+                )}
             </div>
 
             <DataTable 

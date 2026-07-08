@@ -25,39 +25,33 @@ export default function AdminLayout() {
         return <Navigate to="/login" replace />;
     }
 
-    if (!user.roles.includes('Admin')) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-                    <p>You do not have permission to view this area.</p>
-                    <button onClick={logout} className="text-brand-primary underline">Logout</button>
-                </div>
-            </div>
-        );
-    }
+
+
+    const hasPermission = (permission) => {
+        return user?.permissions?.includes(permission);
+    };
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
     const mainNavigation = [
-        { name: 'Products', href: '/admin/products', icon: Package },
-        { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen },
-        { name: 'Blogs', href: '/admin/blogs', icon: FileText },
-    ];
+        { name: 'Products', href: '/admin/products', icon: Package, permission: 'view products' },
+        { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen, permission: 'view saved catalogues' },
+        { name: 'Blogs', href: '/admin/blogs', icon: FileText, permission: 'view blogs' },
+    ].filter(item => !item.permission || hasPermission(item.permission));
 
     const setupNavigation = [
-        { name: 'Users', href: '/admin/users', icon: Users },
-        { name: 'Roles', href: '/admin/roles', icon: Shield },
-        { name: 'Categories', href: '/admin/categories', icon: ListTree },
-        { name: 'Attributes', href: '/admin/attributes', icon: Tags },
-        { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText },
-    ];
+        { name: 'Users', href: '/admin/users', icon: Users, permission: 'view users' },
+        { name: 'Roles', href: '/admin/roles', icon: Shield, permission: 'view roles' },
+        { name: 'Categories', href: '/admin/categories', icon: ListTree, permission: 'view categories' },
+        { name: 'Attributes', href: '/admin/attributes', icon: Tags, permission: 'view attributes' },
+        { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText, permission: 'view blog categories' },
+    ].filter(item => !item.permission || hasPermission(item.permission));
 
     const navigation = [
         ...mainNavigation,
-        { name: 'Setup', children: setupNavigation }
+        ...(setupNavigation.length > 0 ? [{ name: 'Setup', children: setupNavigation }] : [])
     ];
 
     let activeRoute = 'Dashboard';
@@ -139,20 +133,22 @@ export default function AdminLayout() {
                                 })}
                             </div>
                             
-                            <div className="mt-auto pt-4 border-t border-white/10">
-                                <button
-                                    onClick={() => {
-                                        setIsSetupMode(true);
-                                        if (!isSidebarOpen) setIsSidebarOpen(true);
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-white hover:bg-white/10 hover:text-white ${!isSidebarOpen ? 'justify-center' : ''}`}
-                                    title={!isSidebarOpen ? "Setup" : undefined}
-                                >
-                                    <Settings className="w-5 h-5 shrink-0" />
-                                    {isSidebarOpen && <span className="truncate">Setup</span>}
-                                    {isSidebarOpen && <ChevronRight className="w-4 h-4 ml-auto" />}
-                                </button>
-                            </div>
+                            {setupNavigation.length > 0 && (
+                                <div className="mt-auto pt-4 border-t border-white/10">
+                                    <button
+                                        onClick={() => {
+                                            setIsSetupMode(true);
+                                            if (!isSidebarOpen) setIsSidebarOpen(true);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-white hover:bg-white/10 hover:text-white ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                        title={!isSidebarOpen ? "Setup" : undefined}
+                                    >
+                                        <Settings className="w-5 h-5 shrink-0" />
+                                        {isSidebarOpen && <span className="truncate">Setup</span>}
+                                        {isSidebarOpen && <ChevronRight className="w-4 h-4 ml-auto" />}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </nav>

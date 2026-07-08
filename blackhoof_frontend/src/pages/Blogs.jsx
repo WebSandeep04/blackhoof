@@ -9,8 +9,12 @@ import Swal from 'sweetalert2';
 export default function Blogs() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { blogs, pagination, loading } = useSelector(state => state.blogs);
+    const { blogs, pagination, loading: blogsLoading } = useSelector(state => state.blogs);
+    const { user: authUser } = useSelector(state => state.auth);
+    const loading = blogsLoading;
     
+    const hasPermission = (permission) => authUser?.permissions?.includes(permission);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
 
@@ -78,13 +82,15 @@ export default function Blogs() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                <Link 
-                    to="/admin/blogs/create"
-                    className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="New Blog"
-                >
-                    <Plus className="w-5 h-5" />
-                </Link>
+                {hasPermission('create blogs') && (
+                    <Link 
+                        to="/admin/blogs/create"
+                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                        title="New Blog"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </Link>
+                )}
             </div>
 
             <DataTable 
@@ -129,8 +135,12 @@ export default function Blogs() {
                         cellClassName: 'text-right space-x-3',
                         render: (blog) => (
                             <>
-                                <button onClick={() => navigate(`/admin/blogs/edit/${blog.id}`)} className="text-brand-primary hover:text-brand-hover"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(blog.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                {hasPermission('edit blogs') && (
+                                    <button onClick={() => navigate(`/admin/blogs/edit/${blog.id}`)} className="text-brand-primary hover:text-brand-hover" title="Edit Blog"><Edit2 className="w-4 h-4 inline" /></button>
+                                )}
+                                {hasPermission('delete blogs') && (
+                                    <button onClick={() => handleDelete(blog.id)} className="text-red-600 hover:text-red-900" title="Delete Blog"><Trash2 className="w-4 h-4 inline" /></button>
+                                )}
                             </>
                         )
                     }
