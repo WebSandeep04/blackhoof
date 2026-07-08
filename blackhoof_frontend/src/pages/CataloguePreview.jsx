@@ -4,7 +4,7 @@ import { fetchCatalogue } from '../store/slices/catalogueSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
 import { addToCartAsync, removeFromCartAsync, fetchCartAsync } from '../store/slices/catalogueCartSlice';
-import { Filter, Store, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, Plus, Check } from 'lucide-react';
+import { Filter, Store, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, Plus, Check, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CatalogueCartModal from '../components/CatalogueCartModal';
 
@@ -17,7 +17,9 @@ export default function CataloguePreview() {
     
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedAttributes, setSelectedAttributes] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+    const [loadingProductId, setLoadingProductId] = useState(null);
     
     // For expanding/collapsing parent categories in UI
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -29,11 +31,15 @@ export default function CataloguePreview() {
     }, [dispatch]);
 
     useEffect(() => {
-        dispatch(fetchCatalogue({ 
-            category_id: selectedCategory, 
-            attributes: selectedAttributes 
-        }));
-    }, [selectedCategory, selectedAttributes, dispatch]);
+        const delayDebounceFn = setTimeout(() => {
+            dispatch(fetchCatalogue({ 
+                category_id: selectedCategory, 
+                attributes: selectedAttributes,
+                search: searchQuery
+            }));
+        }, 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [selectedCategory, selectedAttributes, searchQuery, dispatch]);
 
     const handleCategoryChange = (categoryId) => {
         setSelectedCategory(categoryId === selectedCategory ? '' : categoryId);
@@ -56,6 +62,24 @@ export default function CataloguePreview() {
         });
     };
 
+    const handleAddToCart = async (product) => {
+        setLoadingProductId(product.id);
+        try {
+            await dispatch(addToCartAsync(product)).unwrap();
+        } finally {
+            setLoadingProductId(null);
+        }
+    };
+
+    const handleRemoveFromCart = async (productId) => {
+        setLoadingProductId(productId);
+        try {
+            await dispatch(removeFromCartAsync(productId)).unwrap();
+        } finally {
+            setLoadingProductId(null);
+        }
+    };
+
     // Category Hierarchy Helpers
     const parentCategories = flatCategories.filter(c => !c.parent_id);
     const getChildren = (parentId) => flatCategories.filter(c => c.parent_id === parentId);
@@ -63,16 +87,32 @@ export default function CataloguePreview() {
     return (
         <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 shrink-0 shadow-sm z-10">
-                <Link to="/admin/catalogue" className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition">
-                    <ChevronLeft className="w-5 h-5" />
-                </Link>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <Store className="w-6 h-6 text-brand-primary" />
-                        Storefront Preview
-                    </h1>
-                    <p className="text-sm text-gray-500">Preview how your catalogue appears to customers.</p>
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-4 shrink-0 shadow-sm z-10">
+                <div className="flex items-center gap-4">
+                    <Link to="/admin/catalogue" className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition">
+                        <ChevronLeft className="w-5 h-5" />
+                    </Link>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <Store className="w-6 h-6 text-brand-primary" />
+                            Storefront Preview
+                        </h1>
+                        <p className="text-sm text-gray-500">Preview how your catalogue appears to customers.</p>
+                    </div>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input 
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-72 bg-gray-50 hover:bg-white focus:bg-white transition-colors"
+                    />
                 </div>
             </div>
 
@@ -258,19 +298,29 @@ export default function CataloguePreview() {
                                             <div className="mt-4">
                                                 {cartItems.some(item => item.id === product.id) ? (
                                                     <button 
-                                                        onClick={() => dispatch(removeFromCartAsync(product.id))}
-                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                                                        onClick={() => handleRemoveFromCart(product.id)}
+                                                        disabled={loadingProductId === product.id}
+                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-75 disabled:cursor-wait"
                                                     >
-                                                        <Check className="w-4 h-4 text-green-600" />
-                                                        Added to Catalogue
+                                                        {loadingProductId === product.id ? (
+                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <Check className="w-4 h-4 text-green-600" />
+                                                        )}
+                                                        {loadingProductId === product.id ? 'Removing...' : 'Added to Catalogue'}
                                                     </button>
                                                 ) : (
                                                     <button 
-                                                        onClick={() => dispatch(addToCartAsync(product))}
-                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-brand-light text-brand-primary font-medium rounded-lg hover:bg-brand-primary hover:text-white transition"
+                                                        onClick={() => handleAddToCart(product)}
+                                                        disabled={loadingProductId === product.id}
+                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-brand-light text-brand-primary font-medium rounded-lg hover:bg-brand-primary hover:text-white transition disabled:opacity-75 disabled:cursor-wait group-[.hover]:hover:bg-brand-primary"
                                                     >
-                                                        <Plus className="w-4 h-4" />
-                                                        Add to Catalogue
+                                                        {loadingProductId === product.id ? (
+                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <Plus className="w-4 h-4" />
+                                                        )}
+                                                        {loadingProductId === product.id ? 'Adding...' : 'Add to Catalogue'}
                                                     </button>
                                                 )}
                                             </div>
