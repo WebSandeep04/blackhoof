@@ -10,15 +10,24 @@ use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\ProductController;
 
 use App\Http\Controllers\CatalogueController;
+use App\Http\Controllers\SavedCatalogueController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/catalogue', [CatalogueController::class, 'index']);
+Route::get('/saved-catalogues/{id}/download', [SavedCatalogueController::class, 'download']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    
+    // Cart Endpoints
+    Route::get('/cart', [SavedCatalogueController::class, 'getCart']);
+    Route::post('/cart/add', [SavedCatalogueController::class, 'addToCart']);
+    Route::post('/cart/remove', [SavedCatalogueController::class, 'removeFromCart']);
+    Route::post('/cart/clear', [SavedCatalogueController::class, 'clearCart']);
+    Route::post('/cart/checkout', [SavedCatalogueController::class, 'checkout']);
 
     // Admin routes (e.g. requires Admin role)
     Route::middleware('role:Admin')->group(function () {
@@ -27,6 +36,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('attributes', AttributeController::class);
         Route::apiResource('products', ProductController::class);
+        
+        // Saved Catalogues management
+        Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
+        Route::delete('saved-catalogues/{id}', [SavedCatalogueController::class, 'destroy']);
+        
         Route::get('permissions', function () {
             return response()->json(\Spatie\Permission\Models\Permission::all());
         });

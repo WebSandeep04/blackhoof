@@ -3,17 +3,21 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCatalogue } from '../store/slices/catalogueSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
-import { Filter, Store, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { addToCartAsync, removeFromCartAsync, fetchCartAsync } from '../store/slices/catalogueCartSlice';
+import { Filter, Store, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, Plus, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CatalogueCartModal from '../components/CatalogueCartModal';
 
 export default function CataloguePreview() {
     const dispatch = useDispatch();
     const { items: products, loading } = useSelector(state => state.catalogue);
     const { flatCategories } = useSelector(state => state.categories);
     const { flatAttributes } = useSelector(state => state.attributes);
+    const cartItems = useSelector(state => state.catalogueCart.cartItems);
     
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedAttributes, setSelectedAttributes] = useState([]);
+    const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     
     // For expanding/collapsing parent categories in UI
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -21,6 +25,7 @@ export default function CataloguePreview() {
     useEffect(() => {
         dispatch(fetchCategories({ all: true }));
         dispatch(fetchAttributes({ all: true }));
+        dispatch(fetchCartAsync());
     }, [dispatch]);
 
     useEffect(() => {
@@ -74,7 +79,7 @@ export default function CataloguePreview() {
             {/* Main Content Area */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar Filters */}
-                <aside className="w-64 bg-white border-r border-gray-200 p-6 overflow-y-auto hidden md:block shrink-0 shadow-sm z-0">
+                <aside className="w-64 bg-white border-r border-gray-200 p-6 overflow-y-auto hidden md:block shrink-0 shadow-sm z-0 scrollbar-brand">
                     <div className="flex justify-between items-center mb-6 text-gray-900 font-semibold border-b pb-2">
                         <div className="flex items-center gap-2">
                             <Filter className="w-4 h-4" />
@@ -180,7 +185,7 @@ export default function CataloguePreview() {
                 </aside>
 
                 {/* Product Grid Area */}
-                <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50/50">
+                <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50/50 scrollbar-brand">
                     {loading ? (
                         <div className="h-full flex flex-col items-center justify-center space-y-4">
                             <div className="w-12 h-12 border-4 border-brand-light border-t-brand-primary rounded-full animate-spin"></div>
@@ -248,6 +253,27 @@ export default function CataloguePreview() {
                                                     </span>
                                                 )}
                                             </div>
+                                            
+                                            {/* Add to Cart Button */}
+                                            <div className="mt-4">
+                                                {cartItems.some(item => item.id === product.id) ? (
+                                                    <button 
+                                                        onClick={() => dispatch(removeFromCartAsync(product.id))}
+                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                                                    >
+                                                        <Check className="w-4 h-4 text-green-600" />
+                                                        Added to Catalogue
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => dispatch(addToCartAsync(product))}
+                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-brand-light text-brand-primary font-medium rounded-lg hover:bg-brand-primary hover:text-white transition"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                        Add to Catalogue
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -256,6 +282,30 @@ export default function CataloguePreview() {
                     )}
                 </main>
             </div>
+            
+            {/* Floating Cart Button */}
+            {cartItems.length > 0 && (
+                <button
+                    onClick={() => setIsCartModalOpen(true)}
+                    className="fixed bottom-8 right-8 z-40 p-4 bg-brand-primary text-white rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-brand-hover transition-all duration-300 flex items-center justify-center group"
+                >
+                    <div className="relative">
+                        <ShoppingCart className="w-6 h-6" />
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                            {cartItems.length}
+                        </span>
+                    </div>
+                    <span className="ml-0 max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-3 whitespace-nowrap transition-all duration-300 font-bold">
+                        View Catalogue Cart
+                    </span>
+                </button>
+            )}
+
+            {/* Cart Modal */}
+            <CatalogueCartModal 
+                isOpen={isCartModalOpen} 
+                onClose={() => setIsCartModalOpen(false)} 
+            />
         </div>
     );
 }

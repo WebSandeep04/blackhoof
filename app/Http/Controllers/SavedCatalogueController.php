@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\SavedCatalogue;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
+
+class SavedCatalogueController extends Controller
+{
+    /**
+     * Get a list of all completed catalogues.
+     */
+    public function index()
+    {
+        // Admin gets all completed catalogues, with product count
+        $catalogues = SavedCatalogue::withCount('products')
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        // We might also want to load the products themselves for viewing in the modal
+        $catalogues->load(['products.images', 'products.category']);
+
+        return response()->json($catalogues);
+    }
+
+    /**
+     * Delete a saved catalogue.
+     */
+    public function destroy($id)
+    {
+        $catalogue = SavedCatalogue::findOrFail($id);
+        $catalogue->delete();
+        
+        return response()->json(['message' => 'Catalogue deleted successfully']);
+    }
+
+    /**
+     * Get or create the active draft catalogue for the user.
+     */
+    private function getDraftCatalogue()
+    {
+        // For now we use Auth::id() or a dummy session based draft if not logged in.
+        // Assuming admin user is logged in.
+        $userId = Auth::id();
+        
+        $catalogue = SavedCatalogue::firstOrCreate(
+            ['user_id' => $userId, 'status' => 'draft'],
+            ['name' => null]
+        );
+
+        return $catalogue;
+    }
+
+    /**
+     * Get the current draft cart.
+     */
+    public function getCart()
+    {
+        $catalogue = $this->getDraftCatalogue();
+        $catalogue->load('products.images', 'products.category', 'products.variants');
+        return response()->json(['cart' => $catalogue]);
+    }
+
+    /**
+     * Add a product to the cart.
+     */
+    public function addToCart(Request $request)
+    {
+        $request->validate(['product_id' => 'required|exists:products,id']);
+        $catalogue = $this->getDraftCatalogue();
+        
+        if (!$catalogue->products()->where('product_id', $request->product_id)->exists()) {
+            $catalogue->products()->attach($request->product_id);
+        }
+
+        return response()->json(['message' => 'Added to cart']);
+    }
+
+    /**
+     * Remove a product from the cart.
+     */
+    public function removeFromCart(Request $request)
+    {
+        $request->validate(['product_id' => 'required|exists:products,id']);
+        $catalogue = $this->getDraftCatalogue();
+        
+        $catalogue->products()->detach($request->product_id);
+
+        return response()->json(['message' => 'Removed from cart']);
+    }
+
+    /**
+     * Clear the cart.
+     */
+    public function clearCart()
+    {
+        $catalogue = $this->getDraftCatalogue();
+        $catalogue->products()->detach();
+
+        return response()->json(['message' => 'Cart cleared']);
+    }
+
+    /**
+     * Checkout: Give name and mark as completed.
+     */
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $catalogue = $this->getDraftCatalogue();
+        
+        if ($catalogue->products()->count() === 0) {
+            return response()->json(['message' => 'Cart is empty'], 400);
+        }
+
+        $catalogue->update([
+            'name' => $request->name,
+            'status' => 'completed'
+        ]);
+
+        return response()->json([
+            'message' => 'Catalogue generated successfully',
+            'catalogue_id' => $catalogue->id
+        ], 200);
+    }
+
+    /**
+     * Generate and stream the PDF for a specific saved catalogue.
+     */
+    public function download($id)
+    {
+        $catalogue = SavedCatalogue::with(['products.images', 'products.variants.attributeValues.attribute', 'products.category'])->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.catalogue', ['catalogue' => $catalogue]);
+        
+        return $pdf->stream(($catalogue->name ?? 'catalogue') . '.pdf');
+    }
+}

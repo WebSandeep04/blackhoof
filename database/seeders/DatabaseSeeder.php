@@ -20,14 +20,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create Admin User if not exists
-        if (!User::where('email', 'admin@example.com')->exists()) {
-            User::factory()->create([
-                'name' => 'Admin User',
-                'email' => 'admin@example.com',
-                'password' => Hash::make('password'),
-            ]);
-        }
+        // 1. Core Seeders (Roles, Permissions, Admin)
+        $this->call([
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            AdminUserSeeder::class,
+        ]);
 
         // 2. Generate 10 Parent Categories
         $parentCategories = Category::factory()->count(10)->create();
