@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ResetPasswordOtpMail;
 
 class AuthController extends Controller
 {
@@ -54,5 +57,58 @@ class AuthController extends Controller
             'email' => $user->email,
             'roles' => $user->roles->pluck('name'),
         ]);
+    }
+
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
+
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
+
+        DB::table('password_reset_otps')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'otp' => $otp,
+                'created_at' => now()
+            ]
+        );
+
+        Mail::to($request->email)->send(new ResetPasswordOtpMail($otp));
+
+        return response()->json(['message' => 'OTP sent successfully']);
+    }
+
+    public function verifyOtpAndResetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|string|size:6',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $record = DB::table('password_reset_otps')
+            ->where('email', $request->email)
+            ->where('otp', $request->otp)
+            ->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        // Check expiration (e.g., 15 minutes)
+        if (now()->diffInMinutes($record->created_at) > 15) {
+            DB::table('password_reset_otps')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'OTP has expired'], 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        DB::table('password_reset_otps')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Password reset successfully']);
     }
 }

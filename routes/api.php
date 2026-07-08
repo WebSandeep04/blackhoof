@@ -16,6 +16,8 @@ use App\Http\Controllers\BlogController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password/send-otp', [AuthController::class, 'sendOtp']);
+Route::post('/forgot-password/reset', [AuthController::class, 'verifyOtpAndResetPassword']);
 Route::get('/catalogue', [CatalogueController::class, 'index']);
 Route::get('/saved-catalogues/{id}/download', [SavedCatalogueController::class, 'download']);
 

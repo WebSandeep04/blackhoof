@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../store/slices/usersSlice';
 import { fetchRoles } from '../store/slices/rolesSlice';
-import { Edit2, Trash2, Plus, Search } from 'lucide-react';
+import { Edit2, Trash2, Plus, Search, Key } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
 export default function Users() {
@@ -12,6 +12,8 @@ export default function Users() {
     const loading = usersLoading || rolesLoading;
     
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({ id: null, password: '' });
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
     const [currentUser, setCurrentUser] = useState({ id: null, name: '', email: '', password: '', roles: [] });
@@ -117,6 +119,38 @@ export default function Users() {
         setCurrentUser({ ...currentUser, roles });
     };
 
+    const openPasswordForm = (user) => {
+        setPasswordData({ id: user.id, password: '' });
+        setIsPasswordFormOpen(true);
+    };
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await dispatch(updateUser({ id: passwordData.id, userData: { password: passwordData.password } })).unwrap();
+            setIsSubmitting(false);
+            setIsPasswordFormOpen(false);
+            dispatch(fetchUsers());
+            Swal.fire({
+                title: 'Success!',
+                text: 'Password updated successfully.',
+                icon: 'success',
+                confirmButtonColor: '#2bb69a',
+                timer: 1500
+            });
+        } catch (error) {
+            setIsSubmitting(false);
+            console.error("Error updating password:", error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Error updating password. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#2bb69a'
+            });
+        }
+    };
+
     // Removed local filter, handled by backend now
 
     return (
@@ -167,33 +201,33 @@ export default function Users() {
                                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Password {currentUser.id && <span className="text-xs text-gray-500 font-normal">(Leave blank to keep unchanged)</span>}
-                                    </label>
-                                    <input 
-                                        type="password" 
-                                        required={!currentUser.id}
-                                        value={currentUser.password}
-                                        onChange={(e) => setCurrentUser({ ...currentUser, password: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {rolesList.map(role => (
-                                            <label key={role.id} className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded border border-gray-200 cursor-pointer hover:bg-gray-100">
-                                                <input 
-                                                    type="checkbox"
-                                                    checked={currentUser.roles.includes(role.name)}
-                                                    onChange={() => handleRoleToggle(role.name)}
-                                                    className="rounded text-brand-primary focus:ring-brand-primary"
-                                                />
-                                                <span className="text-sm font-medium text-gray-700">{role.name}</span>
-                                            </label>
-                                        ))}
+                                {!currentUser.id && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Password
+                                        </label>
+                                        <input 
+                                            type="password" 
+                                            required
+                                            value={currentUser.password}
+                                            onChange={(e) => setCurrentUser({ ...currentUser, password: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
+                                        />
                                     </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                                    <select
+                                        value={currentUser.roles.length > 0 ? currentUser.roles[0] : ''}
+                                        onChange={(e) => setCurrentUser({ ...currentUser, roles: e.target.value ? [e.target.value] : [] })}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
+                                        required
+                                    >
+                                        <option value="">Select a role</option>
+                                        {rolesList.map(role => (
+                                            <option key={role.id} value={role.name}>{role.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
@@ -201,6 +235,35 @@ export default function Users() {
                                 <button type="submit" disabled={isSubmitting} className="px-5 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-hover transition font-medium flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed">
                                     {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
                                     {isSubmitting ? 'Saving...' : 'Save User'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isPasswordFormOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">Change Password</h2>
+                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Password
+                                </label>
+                                <input 
+                                    type="password" 
+                                    required
+                                    value={passwordData.password}
+                                    onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
+                                <button type="button" onClick={() => setIsPasswordFormOpen(false)} disabled={isSubmitting} className="px-5 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium disabled:opacity-50">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-5 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-hover transition font-medium flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed">
+                                    {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+                                    {isSubmitting ? 'Saving...' : 'Update Password'}
                                 </button>
                             </div>
                         </form>
@@ -228,8 +291,9 @@ export default function Users() {
                         cellClassName: 'text-right space-x-3',
                         render: (user) => (
                             <>
-                                <button onClick={() => openForm(user)} className="text-brand-primary hover:text-brand-hover"><Edit2 className="w-4 h-4 inline" /></button>
-                                <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4 inline" /></button>
+                                <button onClick={() => openForm(user)} className="text-brand-primary hover:text-brand-hover" title="Edit User"><Edit2 className="w-4 h-4 inline" /></button>
+                                <button onClick={() => openPasswordForm(user)} className="text-blue-600 hover:text-blue-900" title="Change Password"><Key className="w-4 h-4 inline" /></button>
+                                <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900" title="Delete User"><Trash2 className="w-4 h-4 inline" /></button>
                             </>
                         )
                     }
