@@ -34,6 +34,9 @@ class ProductImage extends Model
     // Accessor for full URL
     public function getUrlAttribute()
     {
+        if (str_starts_with($this->image_path, 'http')) {
+            return $this->image_path;
+        }
         return asset('storage/' . $this->image_path);
     }
 }
