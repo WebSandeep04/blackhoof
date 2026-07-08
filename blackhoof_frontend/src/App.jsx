@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { checkAuth } from './store/slices/authSlice';
 import Login from './pages/Login';
 import AdminLayout from './components/AdminLayout';
+import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Categories from './pages/Categories';
@@ -31,7 +32,8 @@ function App() {
           
           {/* Admin Protected Routes */}
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="/admin/users" replace />} />
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="roles" element={<Roles />} />
             <Route path="categories" element={<Categories />} />

@@ -6,8 +6,21 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class CategoryController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class CategoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view categories', only: ['index', 'show']),
+            new Middleware('permission:create categories', only: ['store']),
+            new Middleware('permission:edit categories', only: ['update']),
+            new Middleware('permission:delete categories', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

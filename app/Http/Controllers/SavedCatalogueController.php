@@ -7,8 +7,19 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 
-class SavedCatalogueController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class SavedCatalogueController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view saved catalogues', only: ['index', 'show']),
+            new Middleware('permission:delete saved catalogues', only: ['destroy']),
+        ];
+    }
+
     /**
      * Get a list of all completed catalogues.
      */

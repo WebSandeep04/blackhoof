@@ -11,8 +11,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class ProductController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class ProductController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view products', only: ['index', 'show']),
+            new Middleware('permission:create products', only: ['store']),
+            new Middleware('permission:edit products', only: ['update']),
+            new Middleware('permission:delete products', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

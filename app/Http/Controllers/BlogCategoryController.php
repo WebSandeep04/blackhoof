@@ -6,8 +6,21 @@ use App\Models\BlogCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class BlogCategoryController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class BlogCategoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view blog categories', only: ['index', 'show']),
+            new Middleware('permission:create blog categories', only: ['store']),
+            new Middleware('permission:edit blog categories', only: ['update']),
+            new Middleware('permission:delete blog categories', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

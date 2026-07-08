@@ -7,8 +7,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
-class BlogController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class BlogController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view blogs', only: ['index', 'show']),
+            new Middleware('permission:create blogs', only: ['store']),
+            new Middleware('permission:edit blogs', only: ['update']),
+            new Middleware('permission:delete blogs', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Blog::with('category');

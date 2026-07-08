@@ -13,6 +13,7 @@ use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\SavedCatalogueController;
 use App\Http\Controllers\BlogCategoryController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\DashboardController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,22 +34,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/clear', [SavedCatalogueController::class, 'clearCart']);
     Route::post('/cart/checkout', [SavedCatalogueController::class, 'checkout']);
 
-    // Admin routes (e.g. requires Admin role)
-    Route::middleware('role:Admin')->group(function () {
-        Route::apiResource('users', UserController::class);
-        Route::apiResource('roles', RoleController::class);
-        Route::apiResource('categories', CategoryController::class);
-        Route::apiResource('attributes', AttributeController::class);
-        Route::apiResource('products', ProductController::class);
-        Route::apiResource('blog-categories', BlogCategoryController::class);
-        Route::apiResource('blogs', BlogController::class);
-        
-        // Saved Catalogues management
-        Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
-        Route::delete('saved-catalogues/{id}', [SavedCatalogueController::class, 'destroy']);
-        
-        Route::get('permissions', function () {
-            return response()->json(\Spatie\Permission\Models\Permission::all());
-        });
+    // Admin routes (Protected by Controller-level Spatie permissions)
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    
+    Route::apiResource('users', UserController::class);
+    Route::apiResource('roles', RoleController::class);
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('attributes', AttributeController::class);
+    Route::apiResource('products', ProductController::class);
+    Route::apiResource('blog-categories', BlogCategoryController::class);
+    Route::apiResource('blogs', BlogController::class);
+    
+    // Saved Catalogues management
+    Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
+    Route::delete('saved-catalogues/{id}', [SavedCatalogueController::class, 'destroy']);
+    
+    Route::get('permissions', function () {
+        return response()->json(\Spatie\Permission\Models\Permission::all());
     });
 });

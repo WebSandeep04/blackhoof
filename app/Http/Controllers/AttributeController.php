@@ -8,8 +8,21 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
-class AttributeController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class AttributeController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view attributes', only: ['index', 'show']),
+            new Middleware('permission:create attributes', only: ['store']),
+            new Middleware('permission:edit attributes', only: ['update']),
+            new Middleware('permission:delete attributes', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
