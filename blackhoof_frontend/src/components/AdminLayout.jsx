@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../store/slices/authSlice';
-import { Users, Shield, LogOut, Menu, Settings, ChevronDown, ChevronRight, Package, ListTree, Tags, BookOpen, FileText } from 'lucide-react';
+import { Users, Shield, LogOut, Menu, Settings, ChevronRight, ChevronLeft, Package, ListTree, Tags, BookOpen, FileText } from 'lucide-react';
 
 export default function AdminLayout() {
     const dispatch = useDispatch();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [openMenus, setOpenMenus] = useState({ 'Setup': true });
+    const [isSetupMode, setIsSetupMode] = useState(false);
     const { user, loading } = useSelector((state) => state.auth);
     const logout = () => dispatch(logoutUser());
     const location = useLocation();
@@ -37,36 +37,27 @@ export default function AdminLayout() {
         );
     }
 
-    const toggleMenu = (menuName) => {
-        if (!isSidebarOpen) {
-            setIsSidebarOpen(true);
-            setOpenMenus(prev => ({ ...prev, [menuName]: true }));
-        } else {
-            setOpenMenus(prev => ({ ...prev, [menuName]: !prev[menuName] }));
-        }
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
     };
 
+    const mainNavigation = [
+        { name: 'Products', href: '/admin/products', icon: Package },
+        { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen },
+        { name: 'Blogs', href: '/admin/blogs', icon: FileText },
+    ];
+
+    const setupNavigation = [
+        { name: 'Users', href: '/admin/users', icon: Users },
+        { name: 'Roles', href: '/admin/roles', icon: Shield },
+        { name: 'Categories', href: '/admin/categories', icon: ListTree },
+        { name: 'Attributes', href: '/admin/attributes', icon: Tags },
+        { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText },
+    ];
+
     const navigation = [
-        { 
-            name: 'Setup', 
-            icon: Settings,
-            children: [
-                { name: 'Users', href: '/admin/users', icon: Users },
-                { name: 'Roles', href: '/admin/roles', icon: Shield },
-                { name: 'Categories', href: '/admin/categories', icon: ListTree },
-                { name: 'Attributes', href: '/admin/attributes', icon: Tags },
-                { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText },
-                { name: 'Blogs', href: '/admin/blogs', icon: FileText },
-            ]
-        },
-        {
-            name: 'Catalog',
-            icon: Package,
-            children: [
-                { name: 'Products', href: '/admin/products', icon: Package },
-                { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen },
-            ]
-        },
+        ...mainNavigation,
+        { name: 'Setup', children: setupNavigation }
     ];
 
     let activeRoute = 'Dashboard';
@@ -90,71 +81,80 @@ export default function AdminLayout() {
                         <span className="text-xl font-bold tracking-wide">AD</span>
                     )}
                 </div>
-                <nav className="flex-1 p-2 space-y-2 overflow-y-auto overflow-x-hidden">
-                    {navigation.map((item) => {
-                        const Icon = item.icon;
-                        if (item.children) {
-                            const isMenuOpen = openMenus[item.name];
-                            const hasActiveChild = item.children.some(child => location.pathname.startsWith(child.href));
-                            return (
-                                <div key={item.name} className="space-y-1">
-                                    <button
-                                        onClick={() => toggleMenu(item.name)}
-                                        title={!isSidebarOpen ? item.name : undefined}
-                                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${hasActiveChild ? 'bg-brand-hover text-white font-medium shadow-sm' : 'text-white/80 hover:bg-white/10 hover:text-white'} ${!isSidebarOpen ? 'justify-center' : ''}`}
-                                    >
-                                        <div className="flex items-center gap-3">
+                <nav className="flex-1 p-2 flex flex-col overflow-y-auto overflow-x-hidden">
+                    {isSetupMode ? (
+                        <>
+                            <button
+                                onClick={() => setIsSetupMode(false)}
+                                className={`flex items-center gap-3 px-3 py-2 mb-2 text-sm rounded-lg transition-colors text-white hover:bg-white/10 hover:text-white ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                title={!isSidebarOpen ? "Back" : undefined}
+                            >
+                                <ChevronLeft className="w-5 h-5 shrink-0" />
+                                {isSidebarOpen && <span className="font-medium">Back to Main</span>}
+                            </button>
+                            
+                            <div className="space-y-1">
+                                {setupNavigation.map((item) => {
+                                    const Icon = item.icon;
+                                    const isActive = location.pathname.startsWith(item.href);
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            to={item.href}
+                                            title={!isSidebarOpen ? item.name : undefined}
+                                            className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                                isActive 
+                                                    ? 'bg-brand-hover text-white font-medium shadow-sm' 
+                                                    : 'text-white hover:bg-white/10 hover:text-white'
+                                            } ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                        >
                                             <Icon className="w-5 h-5 shrink-0" />
                                             {isSidebarOpen && <span className="truncate">{item.name}</span>}
-                                        </div>
-                                        {isSidebarOpen && (
-                                            isMenuOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                    
-                                    {isSidebarOpen && isMenuOpen && (
-                                        <div className="pl-6 space-y-1 mt-1">
-                                            {item.children.map((child) => {
-                                                const ChildIcon = child.icon;
-                                                const isActive = location.pathname.startsWith(child.href);
-                                                return (
-                                                    <Link
-                                                        key={child.name}
-                                                        to={child.href}
-                                                        className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                                                            isActive 
-                                                                ? 'bg-brand-hover/50 text-white font-medium' 
-                                                                : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                                        }`}
-                                                    >
-                                                        <ChildIcon className="w-4 h-4 shrink-0" />
-                                                        <span className="truncate">{child.name}</span>
-                                                    </Link>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        } else {
-                            const isActive = location.pathname.startsWith(item.href);
-                            return (
-                                <Link
-                                    key={item.name}
-                                    to={item.href}
-                                    title={!isSidebarOpen ? item.name : undefined}
-                                    className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
-                                        isActive 
-                                            ? 'bg-brand-hover text-white font-medium shadow-sm' 
-                                            : 'text-white/80 hover:bg-white/10 hover:text-white'
-                                    } ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-col h-full">
+                            <div className="space-y-1 flex-1">
+                                {mainNavigation.map((item) => {
+                                    const Icon = item.icon;
+                                    const isActive = location.pathname.startsWith(item.href);
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            to={item.href}
+                                            title={!isSidebarOpen ? item.name : undefined}
+                                            className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                                isActive 
+                                                    ? 'bg-brand-hover text-white font-medium shadow-sm' 
+                                                    : 'text-white hover:bg-white/10 hover:text-white'
+                                            } ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                        >
+                                            <Icon className="w-5 h-5 shrink-0" />
+                                            {isSidebarOpen && <span className="truncate">{item.name}</span>}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                            
+                            <div className="mt-auto pt-4 border-t border-white/10">
+                                <button
+                                    onClick={() => {
+                                        setIsSetupMode(true);
+                                        if (!isSidebarOpen) setIsSidebarOpen(true);
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-white hover:bg-white/10 hover:text-white ${!isSidebarOpen ? 'justify-center' : ''}`}
+                                    title={!isSidebarOpen ? "Setup" : undefined}
                                 >
-                                    <Icon className="w-5 h-5 shrink-0" />
-                                    {isSidebarOpen && <span className="truncate">{item.name}</span>}
-                                </Link>
-                            );
-                        }
-                    })}
+                                    <Settings className="w-5 h-5 shrink-0" />
+                                    {isSidebarOpen && <span className="truncate">Setup</span>}
+                                    {isSidebarOpen && <ChevronRight className="w-4 h-4 ml-auto" />}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </nav>
             </aside>
 

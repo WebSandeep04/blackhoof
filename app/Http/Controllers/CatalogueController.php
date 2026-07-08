@@ -11,7 +11,8 @@ class CatalogueController extends Controller
     {
         $query = Product::with(['category', 'images', 'variants'])
                     ->where('is_active', true)
-                    ->where('include_in_catalogue', true);
+                    ->where('include_in_catalogue', true)
+                    ->where('product_for', 'satkirti');
 
         if ($request->filled('attributes') && is_array($request->attributes)) {
             $query->whereHas('variants.attributeValues', function ($q) use ($request) {
