@@ -4,6 +4,7 @@ import usersReducer from './slices/usersSlice';
 import rolesReducer from './slices/rolesSlice';
 import categoriesReducer from './slices/categoriesSlice';
 import attributesReducer from './slices/attributesSlice';
+import productsReducer from './slices/productsSlice';
 
 export const store = configureStore({
     reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
         roles: rolesReducer,
         categories: categoriesReducer,
         attributes: attributesReducer,
+        products: productsReducer,
     },
 });

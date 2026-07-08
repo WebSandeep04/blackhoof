@@ -8,6 +8,8 @@ import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Categories from './pages/Categories';
 import Attributes from './pages/Attributes';
+import Products from './pages/Products';
+import ProductForm from './pages/ProductForm';
 
 function App() {
   const dispatch = useDispatch();
@@ -28,6 +30,9 @@ function App() {
             <Route path="roles" element={<Roles />} />
             <Route path="categories" element={<Categories />} />
             <Route path="attributes" element={<Attributes />} />
+            <Route path="products" element={<Products />} />
+            <Route path="products/create" element={<ProductForm />} />
+            <Route path="products/edit/:id" element={<ProductForm />} />
           </Route>
 
           {/* Default Route */}

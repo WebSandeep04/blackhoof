@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AttributeController;
+use App\Http\Controllers\ProductController;
 
 // Public auth routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -22,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('attributes', AttributeController::class);
+        Route::apiResource('products', ProductController::class);
         Route::get('permissions', function () {
             return response()->json(\Spatie\Permission\Models\Permission::all());
         });

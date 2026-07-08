@@ -53,14 +53,15 @@ export default function AdminLayout() {
             children: [
                 { name: 'Users', href: '/admin/users', icon: Users },
                 { name: 'Roles', href: '/admin/roles', icon: Shield },
+                { name: 'Categories', href: '/admin/categories', icon: ListTree },
+                { name: 'Attributes', href: '/admin/attributes', icon: Tags },
             ]
         },
         {
             name: 'Catalog',
             icon: Package,
             children: [
-                { name: 'Categories', href: '/admin/categories', icon: ListTree },
-                { name: 'Attributes', href: '/admin/attributes', icon: Tags },
+                { name: 'Products', href: '/admin/products', icon: Package },
             ]
         },
     ];
