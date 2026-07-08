@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../store/slices/authSlice';
-import { Users, Shield, LogOut, Menu, Settings, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, Shield, LogOut, Menu, Settings, ChevronDown, ChevronRight, Package, ListTree } from 'lucide-react';
 
 export default function AdminLayout() {
     const dispatch = useDispatch();
@@ -53,6 +53,13 @@ export default function AdminLayout() {
             children: [
                 { name: 'Users', href: '/admin/users', icon: Users },
                 { name: 'Roles', href: '/admin/roles', icon: Shield },
+            ]
+        },
+        {
+            name: 'Catalog',
+            icon: Package,
+            children: [
+                { name: 'Categories', href: '/admin/categories', icon: ListTree },
             ]
         },
     ];

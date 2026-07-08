@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import AdminLayout from './components/AdminLayout';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
+import Categories from './pages/Categories';
 
 function App() {
   const dispatch = useDispatch();
@@ -24,6 +25,7 @@ function App() {
             <Route index element={<Navigate to="/admin/users" replace />} />
             <Route path="users" element={<Users />} />
             <Route path="roles" element={<Roles />} />
+            <Route path="categories" element={<Categories />} />
           </Route>
 
           {/* Default Route */}
