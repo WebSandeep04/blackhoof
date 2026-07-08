@@ -6,7 +6,14 @@ export const fetchCatalogue = createAsyncThunk(
     'catalogue/fetchCatalogue',
     async (params, { rejectWithValue }) => {
         try {
-            const response = await api.get('/catalogue', { params });
+            // Convert attributes array to query string format if present
+            const queryParams = { ...params };
+            if (queryParams.attributes && queryParams.attributes.length > 0) {
+                // Axios will serialize array to attributes[]=1&attributes[]=2
+            } else {
+                delete queryParams.attributes;
+            }
+            const response = await api.get('/catalogue', { params: queryParams });
             return response.data; // Usually paginate response contains .data for items and .meta for pagination
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch catalogue');

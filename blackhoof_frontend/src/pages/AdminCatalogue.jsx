@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCatalogue } from '../store/slices/catalogueSlice';
-import { Search, Image as ImageIcon, Plus } from 'lucide-react';
+import { Search, Image as ImageIcon, LayoutGrid } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 
@@ -44,11 +44,11 @@ export default function AdminCatalogue() {
                     />
                 </div>
                 <Link 
-                    to="/admin/products/create"
+                    to="/admin/catalogue/preview"
                     className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                    title="Add to Catalogue"
+                    title="Preview Storefront"
                 >
-                    <Plus className="w-5 h-5" />
+                    <LayoutGrid className="w-5 h-5" />
                 </Link>
             </div>
 

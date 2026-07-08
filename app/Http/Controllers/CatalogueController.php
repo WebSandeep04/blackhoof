@@ -13,8 +13,10 @@ class CatalogueController extends Controller
                     ->where('is_active', true)
                     ->where('include_in_catalogue', true);
 
-        if ($request->filled('brand')) {
-            $query->where('product_for', $request->brand);
+        if ($request->filled('attributes') && is_array($request->attributes)) {
+            $query->whereHas('variants.attributeValues', function ($q) use ($request) {
+                $q->whereIn('attribute_values.id', $request->attributes);
+            });
         }
 
         if ($request->filled('category_id')) {
