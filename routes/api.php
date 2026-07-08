@@ -9,8 +9,11 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\ProductController;
 
-// Public auth routes
+use App\Http\Controllers\CatalogueController;
+
+// Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/catalogue', [CatalogueController::class, 'index']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -10,6 +10,7 @@ import Categories from './pages/Categories';
 import Attributes from './pages/Attributes';
 import Products from './pages/Products';
 import ProductForm from './pages/ProductForm';
+import AdminCatalogue from './pages/AdminCatalogue';
 
 function App() {
   const dispatch = useDispatch();
@@ -33,6 +34,7 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="products/create" element={<ProductForm />} />
             <Route path="products/edit/:id" element={<ProductForm />} />
+            <Route path="catalogue" element={<AdminCatalogue />} />
           </Route>
 
           {/* Default Route */}
