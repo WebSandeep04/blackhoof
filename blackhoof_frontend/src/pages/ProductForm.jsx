@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
 import { createProduct, updateProduct, fetchProduct, clearCurrentProduct } from '../store/slices/productsSlice';
-import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
+import { ArrowLeft, Upload, X, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -58,11 +58,11 @@ export default function ProductForm() {
 
     useEffect(() => {
         if (isEditMode && currentProduct) {
-            setName(currentProduct.name);
-            setSlug(currentProduct.slug);
+            setName(currentProduct.name || '');
+            setSlug(currentProduct.slug || '');
             setCategoryId(currentProduct.category_id || '');
             setDescription(currentProduct.description || '');
-            setIsActive(currentProduct.is_active);
+            setIsActive(currentProduct.is_active ?? true);
             
             setExistingImages(currentProduct.images || []);
 
@@ -72,20 +72,20 @@ export default function ProductForm() {
             
             if (hasMultipleVariants || hasAttributeValues) {
                 setHasVariants(true);
-                setVariants(currentProduct.variants.map(v => ({
+                setVariants((currentProduct.variants || []).map(v => ({
                     id: v.id,
                     sku: v.sku,
                     price: v.price,
                     stock_quantity: v.stock_quantity,
-                    attributes: v.attribute_values.map(av => av.id),
-                    _attributeNames: v.attribute_values.map(av => av.value).join(', ') // Display helper
+                    attributes: (v.attribute_values || []).map(av => av.id),
+                    _attributeNames: (v.attribute_values || []).map(av => av.value).join(', ') // Display helper
                 })));
                 
                 // Extract unique attribute IDs and Value IDs used
                 const usedAttributeIds = new Set();
                 const usedAttributeValueIds = new Set();
-                currentProduct.variants.forEach(v => {
-                    v.attribute_values.forEach(av => {
+                (currentProduct.variants || []).forEach(v => {
+                    (v.attribute_values || []).forEach(av => {
                         usedAttributeIds.add(av.attribute_id);
                         usedAttributeValueIds.add(av.id);
                     });
@@ -166,7 +166,7 @@ export default function ProductForm() {
             .filter(a => selectedAttributes.includes(a.id))
             .map(a => ({
                 ...a,
-                values: a.values.filter(v => selectedAttributeValues.includes(v.id))
+                values: (a.values || []).filter(v => selectedAttributeValues.includes(v.id))
             }))
             .filter(a => a.values.length > 0); // Only keep attributes that have at least one value selected
         
@@ -439,7 +439,7 @@ export default function ProductForm() {
                                             <div key={attr.id} className="mb-3 last:mb-0">
                                                 <div className="text-sm font-medium text-gray-700 mb-2">{attr.name}:</div>
                                                 <div className="flex flex-wrap gap-3">
-                                                    {attr.values.length > 0 ? attr.values.map(val => (
+                                                    {(attr.values || []).length > 0 ? (attr.values || []).map(val => (
                                                         <label key={val.id} className="flex items-center gap-1.5 cursor-pointer">
                                                             <input 
                                                                 type="checkbox"

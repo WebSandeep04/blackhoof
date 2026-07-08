@@ -97,8 +97,17 @@ const productsSlice = createSlice({
                 state.error = action.payload;
             })
             // Fetch one product
+            .addCase(fetchProduct.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(fetchProduct.fulfilled, (state, action) => {
+                state.loading = false;
                 state.currentProduct = action.payload;
+            })
+            .addCase(fetchProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             })
             // Create product
             .addCase(createProduct.fulfilled, (state, action) => {
