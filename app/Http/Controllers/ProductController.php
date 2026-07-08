@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -42,15 +43,22 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $request->merge([
+            'slug' => Str::slug($request->name)
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:products,slug',
             'category_id' => 'nullable|exists:categories,id',
+            'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'include_in_catalogue' => 'boolean',
             'has_variants' => 'required|boolean', // Frontend should send this
             'variants' => 'required|string', // JSON string of variants array
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'product_for' => 'required|in:satkirti,blackhoof',
         ]);
 
         DB::beginTransaction();
@@ -61,8 +69,11 @@ class ProductController extends Controller
                 'name' => $request->name,
                 'slug' => $request->slug,
                 'category_id' => $request->category_id,
+                'short_description' => $request->short_description,
                 'description' => $request->description,
                 'is_active' => $request->is_active ?? true,
+                'include_in_catalogue' => $request->include_in_catalogue ?? true,
+                'product_for' => $request->product_for,
             ]);
 
             // 2. Handle Variants
@@ -128,6 +139,10 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
+        $request->merge([
+            'slug' => Str::slug($request->name)
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => [
@@ -137,12 +152,15 @@ class ProductController extends Controller
                 Rule::unique('products')->ignore($product->id),
             ],
             'category_id' => 'nullable|exists:categories,id',
+            'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'include_in_catalogue' => 'boolean',
             'has_variants' => 'required|boolean',
             'variants' => 'required|string', // JSON string
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'existing_images' => 'nullable|string', // JSON array of IDs to keep
+            'product_for' => 'required|in:satkirti,blackhoof',
         ]);
 
         DB::beginTransaction();
@@ -153,8 +171,11 @@ class ProductController extends Controller
                 'name' => $request->name,
                 'slug' => $request->slug,
                 'category_id' => $request->category_id,
+                'short_description' => $request->short_description,
                 'description' => $request->description,
                 'is_active' => $request->has('is_active') ? $request->is_active : $product->is_active,
+                'include_in_catalogue' => $request->has('include_in_catalogue') ? $request->include_in_catalogue : $product->include_in_catalogue,
+                'product_for' => $request->product_for,
             ]);
 
             // 2. Handle Variants (Sync)

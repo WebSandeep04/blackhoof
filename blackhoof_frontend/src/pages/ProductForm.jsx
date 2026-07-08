@@ -21,11 +21,13 @@ export default function ProductForm() {
     
     // Form State
     const [name, setName] = useState('');
-    const [slug, setSlug] = useState('');
     const [categoryId, setCategoryId] = useState('');
+    const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
     const [isActive, setIsActive] = useState(true);
-    const [hasVariants, setHasVariants] = useState(false);
+    const [includeInCatalogue, setIncludeInCatalogue] = useState(true);
+    const [productFor, setProductFor] = useState('blackhoof');
+    const [hasVariants, setHasVariants] = useState(true); // Default to true as requested
     
     // Images
     const [imageFiles, setImageFiles] = useState([]);
@@ -59,10 +61,12 @@ export default function ProductForm() {
     useEffect(() => {
         if (isEditMode && currentProduct) {
             setName(currentProduct.name || '');
-            setSlug(currentProduct.slug || '');
             setCategoryId(currentProduct.category_id || '');
+            setShortDescription(currentProduct.short_description || '');
             setDescription(currentProduct.description || '');
             setIsActive(currentProduct.is_active ?? true);
+            setIncludeInCatalogue(currentProduct.include_in_catalogue ?? true);
+            setProductFor(currentProduct.product_for || 'blackhoof');
             
             setExistingImages(currentProduct.images || []);
 
@@ -106,17 +110,6 @@ export default function ProductForm() {
         }
     }, [currentProduct, isEditMode]);
 
-    const generateSlug = (value) => {
-        return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    };
-
-    const handleNameChange = (e) => {
-        const newName = e.target.value;
-        setName(newName);
-        if (!isEditMode) {
-            setSlug(generateSlug(newName));
-        }
-    };
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
@@ -231,6 +224,10 @@ export default function ProductForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        if (!name.trim()) {
+            return Swal.fire('Error', 'Product name is required', 'error');
+        }
+
         let finalVariants = [];
 
         if (hasVariants) {
@@ -243,7 +240,7 @@ export default function ProductForm() {
             // Simple product -> one default variant
             finalVariants = [{
                 id: variants[0]?.id || null, // preserve ID if editing
-                sku: simpleSku || generateSlug(name).toUpperCase(),
+                sku: simpleSku || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').toUpperCase(),
                 price: simplePrice || 0,
                 stock_quantity: simpleStock || 0,
                 attributes: []
@@ -252,10 +249,12 @@ export default function ProductForm() {
 
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('slug', slug);
         formData.append('category_id', categoryId);
+        formData.append('short_description', shortDescription);
         formData.append('description', description);
         formData.append('is_active', isActive ? 1 : 0);
+        formData.append('include_in_catalogue', includeInCatalogue ? 1 : 0);
+        formData.append('product_for', productFor);
         formData.append('has_variants', hasVariants ? 1 : 0);
         formData.append('variants', JSON.stringify(finalVariants));
 
@@ -303,7 +302,7 @@ export default function ProductForm() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto pb-12 space-y-6">
+        <div className="max-w-7xl mx-auto pb-12 space-y-6">
             <div className="flex items-center gap-4 mb-6">
                 <button onClick={() => navigate('/admin/products')} className="p-2 bg-white rounded-full shadow-sm text-gray-600 hover:text-brand-primary transition">
                     <ArrowLeft className="w-5 h-5" />
@@ -311,42 +310,29 @@ export default function ProductForm() {
                 <h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Info Card */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
+                {/* Main Content Column */}
+                <div className="flex-1 space-y-6">
+                    {/* Basic Info Card */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
                     <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Basic Information</h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                            <input type="text" required value={name} onChange={handleNameChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
+                            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
+                        </div>
+                    </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                            <textarea value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows="3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
-                            <input type="text" required value={slug} onChange={e => setSlug(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-gray-50" />
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                            <textarea value={description} onChange={e => setDescription(e.target.value)} rows="6" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
                         </div>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white">
-                            <option value="">Select Category</option>
-                            {flatCategories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows="4" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
-                    </div>
-
-                    <div className="flex items-center pt-2">
-                        <input type="checkbox" id="isActive" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary" />
-                        <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-700">Product is Active</label>
-                    </div>
-                </div>
 
                 {/* Images Card */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
@@ -388,13 +374,15 @@ export default function ProductForm() {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
                     <div className="flex items-center justify-between border-b pb-2">
                         <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
+                        {/* 
                         <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                             <button type="button" onClick={() => setHasVariants(false)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${!hasVariants ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Simple Product</button>
                             <button type="button" onClick={() => setHasVariants(true)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${hasVariants ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Variable Product</button>
                         </div>
+                        */}
                     </div>
 
-                    {!hasVariants ? (
+                    {/* !hasVariants ? (
                         // Simple Product Inputs
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -410,7 +398,7 @@ export default function ProductForm() {
                                 <input type="number" required={!hasVariants} value={simpleStock} onChange={e => setSimpleStock(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" />
                             </div>
                         </div>
-                    ) : (
+                    ) : */ (
                         // Variable Product Matrix Builder
                         <div className="space-y-6">
                             <div>
@@ -496,12 +484,99 @@ export default function ProductForm() {
                         </div>
                     )}
                 </div>
+            </div>
 
-                <div className="flex justify-end pt-4">
-                    <button type="submit" disabled={isSubmitting} className="px-8 py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-hover transition font-medium text-lg flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20">
-                        {isSubmitting && <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-                        {isSubmitting ? 'Saving...' : 'Save Product'}
-                    </button>
+                {/* Sidebar Column */}
+                <div className="w-full lg:w-1/3 space-y-6">
+                    {/* Product For Card */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product For</h2>
+                        <div className="flex gap-4">
+                            <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'blackhoof' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
+                                <input type="radio" name="product_for" value="blackhoof" checked={productFor === 'blackhoof'} onChange={e => setProductFor(e.target.value)} className="hidden" />
+                                Blackhoof
+                            </label>
+                            <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'satkirti' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
+                                <input type="radio" name="product_for" value="satkirti" checked={productFor === 'satkirti'} onChange={e => setProductFor(e.target.value)} className="hidden" />
+                                Satkirti
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Settings Card */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Settings</h2>
+                        
+                        <div className="flex items-center justify-between pt-2">
+                            <span className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                {isActive ? 'Published' : 'Draft'}
+                            </span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                            </label>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                            <span className={`text-sm font-medium ${includeInCatalogue ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                {includeInCatalogue ? 'In Catalogue' : 'Hidden'}
+                            </span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={includeInCatalogue} onChange={e => setIncludeInCatalogue(e.target.checked)} />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Category Card */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Category</h2>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Category</label>
+                            <div className="w-full max-h-72 overflow-y-auto rounded-lg bg-white">
+                                {(() => {
+                                    // Build tree and render hierarchical options
+                                    const buildTree = (cats, parentId = null) => {
+                                        return cats
+                                            .filter(c => c.parent_id === parentId)
+                                            .map(c => ({ ...c, children: buildTree(cats, c.id) }));
+                                    };
+                                    
+                                    const renderTreeOptions = (cats, level = 0) => {
+                                        return cats.map(cat => (
+                                            <div key={cat.id} className="flex flex-col">
+                                                <label className={`flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition hover:bg-gray-50 ${categoryId == cat.id ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700'}`} style={{ marginLeft: `${level * 1.5}rem` }}>
+                                                    <input 
+                                                        type="radio" 
+                                                        name="category_id"
+                                                        value={cat.id}
+                                                        checked={categoryId == cat.id}
+                                                        onChange={e => setCategoryId(e.target.value)}
+                                                        className="w-4 h-4 text-brand-primary focus:ring-brand-primary border-gray-300 shrink-0"
+                                                    />
+                                                    <span className="text-sm">{cat.name}</span>
+                                                </label>
+                                                {cat.children && cat.children.length > 0 && (
+                                                    <div className="flex flex-col relative before:absolute before:left-[0.6rem] before:top-0 before:bottom-0 before:w-px before:bg-gray-200">
+                                                        {renderTreeOptions(cat.children, level + 1)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ));
+                                    };
+
+                                    return renderTreeOptions(buildTree(flatCategories));
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4">
+                        <button type="submit" disabled={isSubmitting} className="w-full py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-hover transition font-medium text-lg flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20">
+                            {isSubmitting && <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+                            {isSubmitting ? 'Saving...' : 'Save Product'}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

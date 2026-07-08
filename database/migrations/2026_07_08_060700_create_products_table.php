@@ -16,8 +16,11 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->string('name');
             $table->string('slug')->unique();
+            $table->text('short_description')->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('include_in_catalogue')->default(true);
+            $table->string('product_for')->default('blackhoof');
             $table->timestamps();
         });
     }

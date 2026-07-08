@@ -13,8 +13,10 @@ class Product extends Model
         'category_id',
         'name',
         'slug',
+        'short_description',
         'description',
         'is_active',
+        'product_for',
     ];
 
     protected $casts = [
