@@ -41,6 +41,16 @@ class PermissionSeeder extends Seeder
             'create blogs',
             'edit blogs',
             'delete blogs',
+            'view products',
+            'create products',
+            'edit products',
+            'delete products',
+            'create/edit product basic info',
+            'create/edit product images',
+            'create/edit product inventory',
+            'create/edit product category',
+            'create/edit product settings',
+            'create/edit product for',
         ];
 
         foreach ($permissions as $permission) {
