@@ -133,7 +133,7 @@ export default function Roles() {
 
     const groupedPermissions = (availablePermissions || []).reduce((acc, perm) => {
         const parts = perm.name.split(' ');
-        const entity = parts.length > 1 ? parts[parts.length - 1] : 'other';
+        const entity = parts.length > 1 ? parts.slice(1).join(' ') : 'other';
         if (!acc[entity]) acc[entity] = [];
         acc[entity].push(perm);
         return acc;
@@ -248,9 +248,9 @@ export default function Roles() {
                         header: 'Permissions', 
                         key: 'permissions', 
                         render: (role) => (
-                            <span className="text-gray-600 text-xs">
+                            <span className="text-gray-600 text-xs" title={role.permissions?.map(p => p.name).join(', ')}>
                                 {role.permissions && role.permissions.length > 0 
-                                    ? role.permissions.map(p => p.name).join(', ') 
+                                    ? role.permissions.slice(0, 3).map(p => p.name).join(', ') + (role.permissions.length > 3 ? ' ...' : '')
                                     : 'No permissions'}
                             </span>
                         )
