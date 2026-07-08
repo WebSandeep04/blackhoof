@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+    --color-brand-primary: #2bb69a;
+    --color-brand-hover: #259b83;
+    --color-brand-light: #e6f6f3;
+}
+
+@layer utilities {
+    .bg-glass {
+        @apply bg-white/10 backdrop-blur-md border border-white/20;
+    }
+
+    .scrollbar-brand::-webkit-scrollbar {
+        width: 8px;
+    }
+    .scrollbar-brand::-webkit-scrollbar-track {
+        background: #f3f4f6; 
+        border-radius: 8px;
+    }
+    .scrollbar-brand::-webkit-scrollbar-thumb {
+        background: var(--color-brand-primary); 
+        border-radius: 8px;
+    }
+    .scrollbar-brand::-webkit-scrollbar-thumb:hover {
+        background: var(--color-brand-hover); 
+    }
+    .scrollbar-brand {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-brand-primary) #f3f4f6;
+    }
+}
