@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import usersReducer from './slices/usersSlice';
 import rolesReducer from './slices/rolesSlice';
 import categoriesReducer from './slices/categoriesSlice';
+import attributesReducer from './slices/attributesSlice';
 
 export const store = configureStore({
     reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
         users: usersReducer,
         roles: rolesReducer,
         categories: categoriesReducer,
+        attributes: attributesReducer,
     },
 });

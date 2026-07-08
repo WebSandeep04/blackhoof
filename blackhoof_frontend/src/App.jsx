@@ -7,6 +7,7 @@ import AdminLayout from './components/AdminLayout';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Categories from './pages/Categories';
+import Attributes from './pages/Attributes';
 
 function App() {
   const dispatch = useDispatch();
@@ -26,6 +27,7 @@ function App() {
             <Route path="users" element={<Users />} />
             <Route path="roles" element={<Roles />} />
             <Route path="categories" element={<Categories />} />
+            <Route path="attributes" element={<Attributes />} />
           </Route>
 
           {/* Default Route */}
