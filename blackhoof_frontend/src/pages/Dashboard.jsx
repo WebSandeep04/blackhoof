@@ -39,12 +39,12 @@ export default function Dashboard() {
     if (!stats) return <div className="text-center text-gray-500 mt-10">Failed to load dashboard.</div>;
 
     const statCards = [
-        { label: 'Total Products', value: stats.stats.products, icon: Package, color: 'bg-blue-500' },
+        { label: 'Blackhoof Products', value: stats.stats.products_blackhoof, icon: Package, color: 'bg-blue-500' },
+        { label: 'Satkirti Products', value: stats.stats.products_satkirti, icon: Package, color: 'bg-green-500' },
         { label: 'Active Users', value: stats.stats.users, icon: Users, color: 'bg-brand-primary' },
         { label: 'Saved Catalogues', value: stats.stats.catalogues, icon: BookOpen, color: 'bg-purple-500' },
         { label: 'Published Blogs', value: stats.stats.blogs, icon: FileText, color: 'bg-orange-500' },
         { label: 'Total Categories', value: stats.stats.categories, icon: Layers, color: 'bg-pink-500' },
-        { label: 'System Roles', value: stats.stats.roles, icon: Shield, color: 'bg-gray-700' },
     ];
 
     return (

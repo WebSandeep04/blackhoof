@@ -18,11 +18,11 @@ class DashboardController extends Controller
     public function stats(Request $request)
     {
         // 1. Core aggregates
-        $totalProducts = Product::count();
+        $totalBlackhoofProducts = Product::where('product_for', 'blackhoof')->count();
+        $totalSatkirtiProducts = Product::where('product_for', 'satkirti')->count();
         $totalUsers = User::count();
         $totalBlogs = Blog::count();
         $totalCatalogues = SavedCatalogue::where('status', 'completed')->count();
-        $totalRoles = Role::count();
         $totalCategories = Category::count();
 
         // 2. Recent data (optimized, without loading large relationships unless necessary)
@@ -31,11 +31,11 @@ class DashboardController extends Controller
 
         return response()->json([
             'stats' => [
-                'products' => $totalProducts,
+                'products_blackhoof' => $totalBlackhoofProducts,
+                'products_satkirti' => $totalSatkirtiProducts,
                 'users' => $totalUsers,
                 'blogs' => $totalBlogs,
                 'catalogues' => $totalCatalogues,
-                'roles' => $totalRoles,
                 'categories' => $totalCategories,
             ],
             'recent' => [
