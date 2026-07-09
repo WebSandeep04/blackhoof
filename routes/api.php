@@ -47,7 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Saved Catalogues management
     Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
+    Route::put('saved-catalogues/{id}', [SavedCatalogueController::class, 'update']);
     Route::delete('saved-catalogues/{id}', [SavedCatalogueController::class, 'destroy']);
+    Route::get('saved-catalogues/{id}/versions', [SavedCatalogueController::class, 'versions']);
     
     Route::get('permissions', function () {
         return response()->json(\Spatie\Permission\Models\Permission::all());

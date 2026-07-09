@@ -24,4 +24,14 @@ class SavedCatalogue extends Model
     {
         return $this->belongsToMany(Product::class, 'catalogue_product');
     }
+
+    public function versions()
+    {
+        return $this->hasMany(CatalogueVersion::class);
+    }
+
+    public function latestVersion()
+    {
+        return $this->hasOne(CatalogueVersion::class)->latestOfMany('version_number');
+    }
 }

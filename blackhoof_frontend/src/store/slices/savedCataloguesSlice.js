@@ -26,6 +26,30 @@ export const deleteSavedCatalogue = createAsyncThunk(
     }
 );
 
+export const updateSavedCatalogue = createAsyncThunk(
+    'savedCatalogues/update',
+    async ({ id, product_ids }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`/saved-catalogues/${id}`, { product_ids });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to update saved catalogue');
+        }
+    }
+);
+
+export const fetchCatalogueVersions = createAsyncThunk(
+    'savedCatalogues/fetchVersions',
+    async (id, { rejectWithValue }) => {
+        try {
+            const response = await api.get(`/saved-catalogues/${id}/versions`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to fetch catalogue versions');
+        }
+    }
+);
+
 const initialState = {
     catalogues: [],
     pagination: {
@@ -66,6 +90,13 @@ const savedCataloguesSlice = createSlice({
             // Delete
             .addCase(deleteSavedCatalogue.fulfilled, (state, action) => {
                 state.catalogues = state.catalogues.filter(c => c.id !== action.payload);
+            })
+            // Update
+            .addCase(updateSavedCatalogue.fulfilled, (state, action) => {
+                const index = state.catalogues.findIndex(c => c.id === action.payload.catalogue.id);
+                if (index !== -1) {
+                    state.catalogues[index] = action.payload.catalogue;
+                }
             });
     }
 });

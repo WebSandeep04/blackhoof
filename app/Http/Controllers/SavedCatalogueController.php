@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SavedCatalogue;
+use App\Models\CatalogueVersion;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
@@ -134,6 +135,10 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             'status' => 'completed'
         ]);
 
+        // Create initial version
+        $version = $catalogue->versions()->create(['version_number' => 1]);
+        $version->products()->sync($catalogue->products->pluck('id'));
+
         return response()->json([
             'message' => 'Catalogue generated successfully',
             'catalogue_id' => $catalogue->id
@@ -141,11 +146,58 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     }
 
     /**
+     * Update an existing catalogue and create a new version.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+            'product_ids.*' => 'exists:products,id',
+        ]);
+
+        $catalogue = SavedCatalogue::findOrFail($id);
+        
+        // Sync latest products to the catalogue
+        $catalogue->products()->sync($request->product_ids);
+
+        // Determine next version number
+        $latestVersionNumber = $catalogue->latestVersion ? $catalogue->latestVersion->version_number : 0;
+        
+        // Create new version
+        $version = $catalogue->versions()->create([
+            'version_number' => $latestVersionNumber + 1
+        ]);
+        
+        // Attach products to new version
+        $version->products()->sync($request->product_ids);
+
+        return response()->json(['message' => 'Catalogue updated successfully', 'catalogue' => $catalogue]);
+    }
+
+    /**
+     * Get all versions of a specific catalogue.
+     */
+    public function versions($id)
+    {
+        $catalogue = SavedCatalogue::findOrFail($id);
+        $versions = $catalogue->versions()->orderBy('version_number', 'desc')->get();
+        return response()->json($versions);
+    }
+
+    /**
      * Generate and stream the PDF for a specific saved catalogue.
      */
-    public function download($id)
+    public function download(Request $request, $id)
     {
         $catalogue = SavedCatalogue::with(['products.images', 'products.variants.attributeValues.attribute', 'products.category'])->findOrFail($id);
+
+        if ($request->has('version_id')) {
+            $version = CatalogueVersion::with(['products.images', 'products.variants.attributeValues.attribute', 'products.category'])->findOrFail($request->version_id);
+            if ($version->saved_catalogue_id == $catalogue->id) {
+                $catalogue->setRelation('products', $version->products);
+                $catalogue->name = $catalogue->name . ' (v' . $version->version_number . ')';
+            }
+        }
 
         $pdf = Pdf::loadView('pdf.catalogue', ['catalogue' => $catalogue]);
         
