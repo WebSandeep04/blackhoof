@@ -11,7 +11,9 @@ return new class extends Migration
         Schema::create('saved_catalogues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('name');
+            $table->string('name')->nullable();
+            $table->string('status')->default('completed');
+            $table->foreignId('editing_catalogue_id')->nullable()->constrained('saved_catalogues')->nullOnDelete();
             $table->timestamps();
         });
     }
