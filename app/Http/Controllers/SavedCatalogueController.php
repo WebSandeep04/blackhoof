@@ -130,7 +130,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             return response()->json(['message' => 'Cart is empty'], 400);
         }
 
-        if ($catalogue->editing_catalogue_id) {
+        if ($catalogue->editing_catalogue_id && !$request->boolean('save_as_new')) {
             // We are editing an existing catalogue
             $original = SavedCatalogue::findOrFail($catalogue->editing_catalogue_id);
             
@@ -156,7 +156,8 @@ class SavedCatalogueController extends Controller implements HasMiddleware
 
         $catalogue->update([
             'name' => $request->name,
-            'status' => 'completed'
+            'status' => 'completed',
+            'editing_catalogue_id' => null
         ]);
 
         // Create initial version

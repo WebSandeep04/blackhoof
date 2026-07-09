@@ -10,13 +10,16 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
     const { cartName, editingCatalogueId } = useSelector(state => state.catalogueCart);
     const [catalogueName, setCatalogueName] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [saveAsNew, setSaveAsNew] = useState(false);
 
     
     useEffect(() => {
         if (isOpen && cartName) {
             setCatalogueName(cartName);
+            setSaveAsNew(false);
         } else if (isOpen && !cartName) {
             setCatalogueName('');
+            setSaveAsNew(false);
         }
     }, [isOpen, cartName]);
 
@@ -30,7 +33,8 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         try {
             // 1. Save catalogue and attach products in backend (checkout)
             const response = await api.post('/cart/checkout', { 
-                name: catalogueName
+                name: catalogueName,
+                save_as_new: saveAsNew
             });
             
             const catalogueId = response.data.catalogue_id;
@@ -101,21 +105,42 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                             </div>
 
                             <form onSubmit={handleGenerate} className="mt-8 pt-6 border-t border-gray-100">
-                                <div className="mb-4">
-                                    <label htmlFor="catalogueName" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Catalogue Name <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="catalogueName"
-                                        required
-                                        value={catalogueName}
-                                        onChange={(e) => setCatalogueName(e.target.value)}
-                                        placeholder="e.g. Summer Collection 2026"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-2">This name will appear on the cover of the generated PDF.</p>
-                                </div>
+                                {editingCatalogueId && (
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="saveAsNew"
+                                            checked={saveAsNew}
+                                            onChange={(e) => {
+                                                setSaveAsNew(e.target.checked);
+                                                if (e.target.checked) setCatalogueName('');
+                                                else setCatalogueName(cartName || '');
+                                            }}
+                                            className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                                        />
+                                        <label htmlFor="saveAsNew" className="text-sm font-medium text-gray-700">
+                                            Save as new catalogue
+                                        </label>
+                                    </div>
+                                )}
+
+                                {(!editingCatalogueId || saveAsNew) && (
+                                    <div className="mb-4">
+                                        <label htmlFor="catalogueName" className="block text-sm font-medium text-gray-700 mb-1">
+                                            Catalogue Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="catalogueName"
+                                            required
+                                            value={catalogueName}
+                                            onChange={(e) => setCatalogueName(e.target.value)}
+                                            placeholder="e.g. Summer Collection 2026"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-2">This name will appear on the cover of the generated PDF.</p>
+                                    </div>
+                                )}
 
                                 <button
                                     type="submit"
@@ -125,12 +150,12 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                     {isGenerating ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            {editingCatalogueId ? 'Saving...' : 'Generating PDF...'}
+                                            {(editingCatalogueId && !saveAsNew) ? 'Saving...' : 'Generating PDF...'}
                                         </>
                                     ) : (
                                         <>
                                             <Download className="w-5 h-5" />
-                                            {editingCatalogueId ? 'Save & Download PDF' : 'Generate & Download PDF'}
+                                            {(editingCatalogueId && !saveAsNew) ? 'Save & Download PDF' : 'Generate & Download PDF'}
                                         </>
                                     )}
                                 </button>
