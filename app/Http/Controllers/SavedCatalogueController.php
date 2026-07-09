@@ -130,6 +130,30 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             return response()->json(['message' => 'Cart is empty'], 400);
         }
 
+        if ($catalogue->editing_catalogue_id) {
+            // We are editing an existing catalogue
+            $original = SavedCatalogue::findOrFail($catalogue->editing_catalogue_id);
+            
+            // Sync products
+            $original->products()->sync($catalogue->products->pluck('id'));
+
+            // Create new version
+            $latestVersionNumber = $original->latestVersion ? $original->latestVersion->version_number : 0;
+            $version = $original->versions()->create([
+                'version_number' => $latestVersionNumber + 1
+            ]);
+            $version->products()->sync($catalogue->products->pluck('id'));
+
+            // Clear draft cart
+            $catalogue->products()->detach();
+            $catalogue->update(['editing_catalogue_id' => null, 'name' => null]);
+
+            return response()->json([
+                'message' => 'Catalogue updated successfully',
+                'catalogue_id' => $original->id
+            ], 200);
+        }
+
         $catalogue->update([
             'name' => $request->name,
             'status' => 'completed'
@@ -146,32 +170,21 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     }
 
     /**
-     * Update an existing catalogue and create a new version.
+     * Load an existing catalogue into the draft cart for editing.
      */
-    public function update(Request $request, $id)
+    public function loadToDraft($id)
     {
-        $request->validate([
-            'product_ids' => 'required|array',
-            'product_ids.*' => 'exists:products,id',
+        $original = SavedCatalogue::findOrFail($id);
+        $draft = $this->getDraftCatalogue();
+
+        // Sync original products to draft
+        $draft->products()->sync($original->products->pluck('id'));
+        $draft->update([
+            'editing_catalogue_id' => $original->id,
+            'name' => $original->name
         ]);
 
-        $catalogue = SavedCatalogue::findOrFail($id);
-        
-        // Sync latest products to the catalogue
-        $catalogue->products()->sync($request->product_ids);
-
-        // Determine next version number
-        $latestVersionNumber = $catalogue->latestVersion ? $catalogue->latestVersion->version_number : 0;
-        
-        // Create new version
-        $version = $catalogue->versions()->create([
-            'version_number' => $latestVersionNumber + 1
-        ]);
-        
-        // Attach products to new version
-        $version->products()->sync($request->product_ids);
-
-        return response()->json(['message' => 'Catalogue updated successfully', 'catalogue' => $catalogue]);
+        return response()->json(['message' => 'Loaded into cart', 'cart' => $draft]);
     }
 
     /**

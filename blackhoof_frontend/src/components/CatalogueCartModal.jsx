@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCartAsync, clearCartAsync } from '../store/slices/catalogueCartSlice';
 import { X, FileText, Trash2, Download } from 'lucide-react';
@@ -7,8 +7,18 @@ import api from '../api/axios';
 export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
+    const { cartName, editingCatalogueId } = useSelector(state => state.catalogueCart);
     const [catalogueName, setCatalogueName] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+
+    
+    useEffect(() => {
+        if (isOpen && cartName) {
+            setCatalogueName(cartName);
+        } else if (isOpen && !cartName) {
+            setCatalogueName('');
+        }
+    }, [isOpen, cartName]);
 
     if (!isOpen) return null;
 
@@ -45,7 +55,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                         <FileText className="w-5 h-5 text-brand-primary" />
-                        Catalogue Generator
+                        {editingCatalogueId ? 'Edit Catalogue' : 'Catalogue Generator'}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition">
                         <X className="w-5 h-5" />
@@ -115,12 +125,12 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                     {isGenerating ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            Generating PDF...
+                                            {editingCatalogueId ? 'Saving...' : 'Generating PDF...'}
                                         </>
                                     ) : (
                                         <>
                                             <Download className="w-5 h-5" />
-                                            Generate & Download PDF
+                                            {editingCatalogueId ? 'Save & Download PDF' : 'Generate & Download PDF'}
                                         </>
                                     )}
                                 </button>

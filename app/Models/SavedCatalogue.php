@@ -13,6 +13,7 @@ class SavedCatalogue extends Model
         'user_id',
         'name',
         'status',
+        'editing_catalogue_id',
     ];
 
     public function user()

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchSavedCatalogues, deleteSavedCatalogue, fetchCatalogueVersions, updateSavedCatalogue } from '../store/slices/savedCataloguesSlice';
+import { fetchSavedCatalogues, deleteSavedCatalogue, fetchCatalogueVersions } from '../store/slices/savedCataloguesSlice';
 import api from '../api/axios';
 import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2, History } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
 
 export default function AdminCatalogue() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { catalogues, pagination, loading: cataloguesLoading } = useSelector((state) => state.savedCatalogues);
     const { user: authUser } = useSelector(state => state.auth);
     const loading = cataloguesLoading;
@@ -101,34 +102,12 @@ export default function AdminCatalogue() {
         }
     };
 
-    const openEditModal = (catalogue) => {
-        setSelectedCatalogue(catalogue);
-        setEditProducts(catalogue.products || []);
-        setIsEditModalOpen(true);
-    };
-
-    const handleRemoveProduct = (productId) => {
-        setEditProducts(prev => prev.filter(p => p.id !== productId));
-    };
-
-    const handleAddProduct = (product) => {
-        if (!editProducts.find(p => p.id === product.id)) {
-            setEditProducts(prev => [...prev, product]);
-        }
-    };
-
-    const saveEdit = async () => {
+    const handleEdit = async (catalogue) => {
         try {
-            await dispatch(updateSavedCatalogue({
-                id: selectedCatalogue.id,
-                product_ids: editProducts.map(p => p.id)
-            })).unwrap();
-            
-            Swal.fire('Success', 'Catalogue updated successfully', 'success');
-            setIsEditModalOpen(false);
-            dispatch(fetchSavedCatalogues({ page, search: searchQuery }));
+            await api.post(`/saved-catalogues/${catalogue.id}/load-to-draft`);
+            navigate('/admin/catalogue/preview');
         } catch (error) {
-            Swal.fire('Error', 'Failed to update catalogue', 'error');
+            Swal.fire('Error', 'Failed to load catalogue for editing', 'error');
         }
     };
 
@@ -223,7 +202,7 @@ export default function AdminCatalogue() {
                                 </button>
 
                                 <button 
-                                    onClick={() => openEditModal(catalogue)}
+                                    onClick={() => handleEdit(catalogue)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition font-medium text-xs"
                                     title="Edit"
                                 >

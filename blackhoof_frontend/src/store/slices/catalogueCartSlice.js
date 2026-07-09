@@ -6,8 +6,11 @@ export const fetchCartAsync = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await api.get('/cart');
-            // Extract the products from the catalogue cart object
-            return response.data.cart.products || [];
+            return {
+                items: response.data.cart.products || [],
+                cartName: response.data.cart.name,
+                editingCatalogueId: response.data.cart.editing_catalogue_id
+            };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to fetch cart');
         }
@@ -52,6 +55,8 @@ export const clearCartAsync = createAsyncThunk(
 
 const initialState = {
     cartItems: [],
+    cartName: null,
+    editingCatalogueId: null,
     loading: false,
     error: null,
 };
@@ -69,7 +74,9 @@ const catalogueCartSlice = createSlice({
             })
             .addCase(fetchCartAsync.fulfilled, (state, action) => {
                 state.loading = false;
-                state.cartItems = action.payload;
+                state.cartItems = action.payload.items;
+                state.cartName = action.payload.cartName;
+                state.editingCatalogueId = action.payload.editingCatalogueId;
             })
             .addCase(fetchCartAsync.rejected, (state, action) => {
                 state.loading = false;
@@ -90,6 +97,8 @@ const catalogueCartSlice = createSlice({
             // Clear Cart
             .addCase(clearCartAsync.fulfilled, (state) => {
                 state.cartItems = [];
+                state.cartName = null;
+                state.editingCatalogueId = null;
             });
     }
 });
