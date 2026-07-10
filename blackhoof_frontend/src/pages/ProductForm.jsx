@@ -65,6 +65,40 @@ export default function ProductForm() {
         };
     }, [dispatch, id, isEditMode]);
 
+    // Derived filtered attributes based on selected category
+    const [filteredAttributes, setFilteredAttributes] = useState([]);
+
+    useEffect(() => {
+        if (!categoryId) {
+            setFilteredAttributes([]);
+            return;
+        }
+
+        // Find the selected category in the flatCategories tree
+        // Since it's a tree in the state but maybe flat here?
+        // Wait, flatCategories is an array of all categories. We can just find it.
+        const category = flatCategories.find(c => c.id == categoryId);
+        if (category && category.attributes) {
+            const mappedAttrIds = category.attributes.map(a => a.id);
+            setFilteredAttributes(flatAttributes.filter(a => mappedAttrIds.includes(a.id)));
+        } else {
+            setFilteredAttributes([]);
+        }
+    }, [categoryId, flatCategories, flatAttributes]);
+
+    // When category changes, reset variant builder if it's not the initial load
+    useEffect(() => {
+        // If edit mode and product hasn't loaded yet, don't clear
+        if (isEditMode && (!currentProduct || currentProduct.category_id == categoryId)) {
+            return;
+        }
+        
+        // Reset variant builder
+        setSelectedAttributes([]);
+        setSelectedAttributeValues([]);
+        setVariants([]);
+    }, [categoryId]);
+
     useEffect(() => {
         if (isEditMode && currentProduct) {
             setName(currentProduct.name || '');
@@ -396,27 +430,33 @@ export default function ProductForm() {
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">1. Select Attributes to create variations</label>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {flatAttributes.map(attr => (
-                                        <button 
-                                            key={attr.id}
-                                            type="button"
-                                            onClick={() => toggleAttribute(attr.id)}
-                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
-                                                selectedAttributes.includes(attr.id) 
-                                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary' 
-                                                : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
-                                            }`}
-                                        >
-                                            {attr.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                {filteredAttributes.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {filteredAttributes.map(attr => (
+                                            <button 
+                                                key={attr.id}
+                                                type="button"
+                                                onClick={() => toggleAttribute(attr.id)}
+                                                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+                                                    selectedAttributes.includes(attr.id) 
+                                                    ? 'bg-brand-primary/10 border-brand-primary text-brand-primary' 
+                                                    : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                                                }`}
+                                            >
+                                                {attr.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        No attributes are mapped to this category. Please map attributes in the Category settings first.
+                                    </div>
+                                )}
 
                                 {selectedAttributes.length > 0 && (
                                     <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                                         <h3 className="text-sm font-semibold text-gray-900">2. Select Values</h3>
-                                        {flatAttributes.filter(a => selectedAttributes.includes(a.id)).map(attr => (
+                                        {filteredAttributes.filter(a => selectedAttributes.includes(a.id)).map(attr => (
                                             <div key={attr.id} className="mb-3 last:mb-0">
                                                 <div className="text-sm font-medium text-gray-700 mb-2">{attr.name}:</div>
                                                 <div className="flex flex-wrap gap-3">

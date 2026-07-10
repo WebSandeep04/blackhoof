@@ -56,6 +56,15 @@ export const deleteCategory = createAsyncThunk('categories/delete', async (id, {
     }
 });
 
+export const syncCategoryAttributes = createAsyncThunk('categories/syncAttributes', async ({ id, attributes }, { rejectWithValue }) => {
+    try {
+        const response = await api.post(`/categories/${id}/attributes`, { attributes });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || 'Failed to sync attributes');
+    }
+});
+
 const initialState = {
     categories: [],
     flatCategories: [], // For dropdowns
@@ -112,6 +121,17 @@ const categoriesSlice = createSlice({
             // Delete category
             .addCase(deleteCategory.fulfilled, (state, action) => {
                 state.categories = state.categories.filter(c => c.id !== action.payload);
+            })
+            // Sync Attributes
+            .addCase(syncCategoryAttributes.fulfilled, (state, action) => {
+                const index = state.categories.findIndex(c => c.id === action.payload.id);
+                if (index !== -1) {
+                    state.categories[index] = action.payload;
+                }
+                const flatIndex = state.flatCategories.findIndex(c => c.id === action.payload.id);
+                if (flatIndex !== -1) {
+                    state.flatCategories[flatIndex] = action.payload;
+                }
             });
     }
 });

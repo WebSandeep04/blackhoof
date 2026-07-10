@@ -39,7 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::apiResource('users', UserController::class);
     Route::apiResource('roles', RoleController::class);
+    
     Route::apiResource('categories', CategoryController::class);
+    Route::post('categories/{id}/attributes', [CategoryController::class, 'syncAttributes']);
+    
     Route::apiResource('attributes', AttributeController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('blog-categories', BlogCategoryController::class);

@@ -27,14 +27,14 @@ class CategoryController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Category::with('parent');
+        $query = Category::with('parent', 'attributes');
 
         if ($request->filled('search')) {
             $query->where('name', 'like', "%{$request->search}%");
         }
 
         if ($request->query('all') === 'true') {
-            return response()->json(Category::orderBy('name')->get());
+            return response()->json(Category::with('attributes')->orderBy('name')->get());
         }
 
         $categories = $query->paginate(10);
@@ -67,7 +67,7 @@ class CategoryController extends Controller implements HasMiddleware
             'image' => $imagePath,
         ]);
 
-        return response()->json($category->load('parent'), 201);
+        return response()->json($category->load('parent', 'attributes'), 201);
     }
 
     /**
@@ -75,7 +75,7 @@ class CategoryController extends Controller implements HasMiddleware
      */
     public function show(string $id)
     {
-        $category = Category::with('parent')->findOrFail($id);
+        $category = Category::with('parent', 'attributes')->findOrFail($id);
         return response()->json($category);
     }
 
@@ -115,7 +115,7 @@ class CategoryController extends Controller implements HasMiddleware
 
         $category->update($data);
 
-        return response()->json($category->load('parent'));
+        return response()->json($category->load('parent', 'attributes'));
     }
 
     /**
@@ -131,5 +131,21 @@ class CategoryController extends Controller implements HasMiddleware
         
         $category->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * Sync attributes for the category.
+     */
+    public function syncAttributes(Request $request, $id)
+    {
+        $request->validate([
+            'attributes' => 'array',
+            'attributes.*' => 'exists:attributes,id',
+        ]);
+
+        $category = Category::findOrFail($id);
+        $category->attributes()->sync($request->attributes ?? []);
+
+        return response()->json($category->load('parent', 'attributes'));
     }
 }
