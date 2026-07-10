@@ -73,7 +73,7 @@ export default function Testimonials() {
                         className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
                     />
                 </div>
-                {hasPermission('create/edit testimonials') && (
+                {hasPermission('create testimonials') && (
                     <Link to="/admin/testimonials/create" className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm" title="Add Testimonial">
                         <Plus className="w-5 h-5" />
                     </Link>
@@ -93,13 +93,22 @@ export default function Testimonials() {
                         )
                     },
                     {
+                        header: 'Status',
+                        key: 'is_active',
+                        render: (testimonial) => (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${testimonial.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {testimonial.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        )
+                    },
+                    {
                         header: 'Actions',
                         key: 'actions',
                         className: 'text-right',
                         cellClassName: 'text-right space-x-3',
                         render: (testimonial) => (
                             <>
-                                {hasPermission('create/edit testimonials') && (
+                                {hasPermission('edit testimonials') && (
                                     <Link to={`/admin/testimonials/edit/${testimonial.id}`} className="text-brand-primary hover:text-brand-hover" title="Edit">
                                         <Edit2 className="w-4 h-4 inline" />
                                     </Link>

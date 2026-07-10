@@ -51,6 +51,10 @@ class PermissionSeeder extends Seeder
             'create/edit product category',
             'create/edit product settings',
             'create/edit product for',
+            'view testimonials',
+            'create testimonials',
+            'edit testimonials',
+            'delete testimonials',
         ];
 
         foreach ($permissions as $permission) {

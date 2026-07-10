@@ -14,7 +14,7 @@ class TestimonialController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:view testimonials', only: ['index', 'show']),
-            new Middleware('permission:create/edit testimonials', only: ['store', 'update']),
+            new Middleware('permission:create testimonials|edit testimonials', only: ['store', 'update']),
             new Middleware('permission:delete testimonials', only: ['destroy']),
         ];
     }
@@ -37,6 +37,7 @@ class TestimonialController extends Controller implements HasMiddleware
             'rating' => 'required|integer|min:1|max:5',
             'text' => 'required|string',
             'given_by' => 'required|string|max:255',
+            'is_active' => 'boolean',
         ]);
 
         $testimonial = Testimonial::create($validated);
@@ -54,6 +55,7 @@ class TestimonialController extends Controller implements HasMiddleware
             'rating' => 'required|integer|min:1|max:5',
             'text' => 'required|string',
             'given_by' => 'required|string|max:255',
+            'is_active' => 'boolean',
         ]);
 
         $testimonial->update($validated);

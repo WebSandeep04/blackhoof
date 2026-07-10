@@ -16,6 +16,7 @@ export default function TestimonialForm() {
     const [givenBy, setGivenBy] = useState('');
     const [text, setText] = useState('');
     const [rating, setRating] = useState(5);
+    const [isActive, setIsActive] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -25,6 +26,7 @@ export default function TestimonialForm() {
                 setGivenBy(testimonial.given_by);
                 setText(testimonial.text);
                 setRating(testimonial.rating);
+                setIsActive(testimonial.is_active !== undefined ? testimonial.is_active : true);
             } else {
                 dispatch(fetchTestimonials());
             }
@@ -49,7 +51,8 @@ export default function TestimonialForm() {
         const data = {
             given_by: givenBy,
             text: text,
-            rating: rating
+            rating: rating,
+            is_active: isActive
         };
 
         try {
@@ -107,6 +110,8 @@ export default function TestimonialForm() {
                     />
                 </div>
 
+
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
                     <select 
@@ -133,6 +138,20 @@ export default function TestimonialForm() {
                             placeholder="Write the testimonial here..."
                         />
                     </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={isActive}
+                            onChange={(e) => setIsActive(e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">{isActive ? 'Active' : 'Inactive'}</span>
+                    </label>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 mt-12">
