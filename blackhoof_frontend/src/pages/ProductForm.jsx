@@ -651,7 +651,8 @@ export default function ProductForm() {
                                             ));
                                         };
 
-                                        return renderTreeOptions(buildTree(flatCategories));
+                                        const filteredCategories = flatCategories.filter(c => !c.category_for || c.category_for === productFor);
+                                        return renderTreeOptions(buildTree(filteredCategories));
                                     })()}
                                 </div>
                             </div>
