@@ -16,11 +16,15 @@ class Product extends Model
         'short_description',
         'description',
         'is_active',
+        'is_trending',
+        'is_top_seller',
         'product_for',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_trending' => 'boolean',
+        'is_top_seller' => 'boolean',
     ];
 
     public function category()

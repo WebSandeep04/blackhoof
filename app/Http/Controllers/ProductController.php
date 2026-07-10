@@ -67,6 +67,8 @@ class ProductController extends Controller implements HasMiddleware
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_trending' => 'boolean',
+            'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
             'has_variants' => 'required|boolean', // Frontend should send this
             'variants' => 'required|string', // JSON string of variants array
@@ -85,6 +87,8 @@ class ProductController extends Controller implements HasMiddleware
                 'short_description' => $request->short_description,
                 'description' => $request->description,
                 'is_active' => $request->is_active ?? true,
+                'is_trending' => $request->is_trending ?? false,
+                'is_top_seller' => $request->is_top_seller ?? false,
                 'include_in_catalogue' => $request->include_in_catalogue ?? true,
                 'product_for' => $request->product_for,
             ]);
@@ -168,6 +172,8 @@ class ProductController extends Controller implements HasMiddleware
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_trending' => 'boolean',
+            'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
             'has_variants' => 'required|boolean',
             'variants' => 'required|string', // JSON string
@@ -187,6 +193,8 @@ class ProductController extends Controller implements HasMiddleware
                 'short_description' => $request->short_description,
                 'description' => $request->description,
                 'is_active' => $request->has('is_active') ? $request->is_active : $product->is_active,
+                'is_trending' => $request->has('is_trending') ? $request->is_trending : $product->is_trending,
+                'is_top_seller' => $request->has('is_top_seller') ? $request->is_top_seller : $product->is_top_seller,
                 'include_in_catalogue' => $request->has('include_in_catalogue') ? $request->include_in_catalogue : $product->include_in_catalogue,
                 'product_for' => $request->product_for,
             ]);

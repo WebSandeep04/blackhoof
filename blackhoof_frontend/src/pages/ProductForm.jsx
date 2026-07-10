@@ -30,6 +30,8 @@ export default function ProductForm() {
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
     const [isActive, setIsActive] = useState(true);
+    const [isTrending, setIsTrending] = useState(false);
+    const [isTopSeller, setIsTopSeller] = useState(false);
     const [includeInCatalogue, setIncludeInCatalogue] = useState(true);
     const [productFor, setProductFor] = useState('blackhoof');
     const [hasVariants, setHasVariants] = useState(true); // Default to true as requested
@@ -70,6 +72,8 @@ export default function ProductForm() {
             setShortDescription(currentProduct.short_description || '');
             setDescription(currentProduct.description || '');
             setIsActive(currentProduct.is_active ?? true);
+            setIsTrending(currentProduct.is_trending ?? false);
+            setIsTopSeller(currentProduct.is_top_seller ?? false);
             setIncludeInCatalogue(currentProduct.include_in_catalogue ?? true);
             setProductFor(currentProduct.product_for || 'blackhoof');
             
@@ -258,6 +262,8 @@ export default function ProductForm() {
         formData.append('short_description', shortDescription);
         formData.append('description', description);
         formData.append('is_active', isActive ? 1 : 0);
+        formData.append('is_trending', isTrending ? 1 : 0);
+        formData.append('is_top_seller', isTopSeller ? 1 : 0);
         formData.append('include_in_catalogue', includeInCatalogue ? 1 : 0);
         formData.append('product_for', productFor);
         formData.append('has_variants', hasVariants ? 1 : 0);
@@ -507,6 +513,26 @@ export default function ProductForm() {
                                 </label>
                             </div>
                             
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <span className={`text-sm font-medium ${isTrending ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                    {isTrending ? 'Trending' : 'Not Trending'}
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={isTrending} onChange={e => setIsTrending(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                                </label>
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <span className={`text-sm font-medium ${isTopSeller ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                    {isTopSeller ? 'Top Seller' : 'Not Top Seller'}
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={isTopSeller} onChange={e => setIsTopSeller(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                                </label>
+                            </div>
+
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                                 <span className={`text-sm font-medium ${includeInCatalogue ? 'text-brand-primary' : 'text-gray-500'}`}>
                                     {includeInCatalogue ? 'In Catalogue' : 'Hidden'}
