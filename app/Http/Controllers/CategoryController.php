@@ -139,12 +139,19 @@ class CategoryController extends Controller implements HasMiddleware
     public function syncAttributes(Request $request, $id)
     {
         $request->validate([
-            'attributes' => 'array',
-            'attributes.*' => 'exists:attributes,id',
+            'attributes' => 'nullable|array',
+            'attributes.*' => 'required|integer|exists:attributes,id',
         ]);
 
         $category = Category::findOrFail($id);
-        $category->attributes()->sync($request->attributes ?? []);
+        
+        $attributes = collect($request->input('attributes', []))
+            ->filter(function ($value) {
+                return !empty($value);
+            })
+            ->toArray();
+
+        $category->attributes()->sync($attributes);
 
         return response()->json($category->load('parent', 'attributes'));
     }
