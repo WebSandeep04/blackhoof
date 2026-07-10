@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, deleteProduct } from '../store/slices/productsSlice';
+import { fetchCategories } from '../store/slices/categoriesSlice';
 import { Edit2, Trash2, Plus, Search, Image as ImageIcon } from 'lucide-react';
+import DynamicFilter from '../components/DynamicFilter';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
@@ -9,6 +11,7 @@ import { Link } from 'react-router-dom';
 export default function Products() {
     const dispatch = useDispatch();
     const { products, pagination, loading: productsLoading } = useSelector(state => state.products);
+    const { flatCategories } = useSelector(state => state.categories);
     const { user: authUser } = useSelector(state => state.auth);
     const loading = productsLoading;
     
@@ -16,13 +19,18 @@ export default function Products() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
+    const [filters, setFilters] = useState({});
+
+    useEffect(() => {
+        dispatch(fetchCategories({ all: true }));
+    }, [dispatch]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            dispatch(fetchProducts({ page, search: searchQuery }));
+            dispatch(fetchProducts({ page, search: searchQuery, filters }));
         }, 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, page, dispatch]);
+    }, [searchQuery, page, filters, dispatch]);
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -68,31 +76,90 @@ export default function Products() {
         }
     };
 
+    const filterConfig = [
+        {
+            key: 'category_id',
+            label: 'Category',
+            type: 'select',
+            options: (flatCategories || []).map(c => ({ value: c.id, label: c.name }))
+        },
+        {
+            key: 'is_active',
+            label: 'Status',
+            type: 'boolean',
+            trueLabel: 'Active',
+            falseLabel: 'Draft'
+        },
+        {
+            key: 'is_trending',
+            label: 'Trending',
+            type: 'boolean',
+            trueLabel: 'Yes',
+            falseLabel: 'No'
+        },
+        {
+            key: 'is_top_seller',
+            label: 'Top Seller',
+            type: 'boolean',
+            trueLabel: 'Yes',
+            falseLabel: 'No'
+        },
+        {
+            key: 'include_in_catalogue',
+            label: 'In Catalogue',
+            type: 'boolean',
+            trueLabel: 'Yes',
+            falseLabel: 'No'
+        },
+        {
+            key: 'product_for',
+            label: 'Product For',
+            type: 'select',
+            options: [
+                { value: 'blackhoof', label: 'Blackhoof' },
+                { value: 'satkirti', label: 'Satkirti' }
+            ]
+        }
+    ];
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-end items-center gap-4">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+            <DynamicFilter 
+                config={filterConfig}
+                initialFilters={filters}
+                onFilterChange={(newFilters) => {
+                    setFilters(newFilters);
+                    setPage(1);
+                }}
+                onClear={() => {
+                    setFilters({});
+                    setPage(1);
+                }}
+            >
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input 
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
+                        />
                     </div>
-                    <input 
-                        type="text"
-                        placeholder="Search products..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
-                    />
+                    {hasPermission('create products') && (
+                        <Link 
+                            to="/admin/products/create"
+                            className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
+                            title="Add Product"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </Link>
+                    )}
                 </div>
-                {hasPermission('create products') && (
-                    <Link 
-                        to="/admin/products/create"
-                        className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
-                        title="Add Product"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </Link>
-                )}
-            </div>
+            </DynamicFilter>
 
             <DataTable 
                 columns={[

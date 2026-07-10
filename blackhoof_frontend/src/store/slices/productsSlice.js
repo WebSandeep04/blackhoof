@@ -1,9 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axios';
 
-export const fetchProducts = createAsyncThunk('products/fetchAll', async ({ page = 1, search = '' } = {}, { rejectWithValue }) => {
+export const fetchProducts = createAsyncThunk('products/fetchAll', async ({ page = 1, search = '', filters = {} } = {}, { rejectWithValue }) => {
     try {
-        const response = await api.get(`/products?page=${page}&search=${search}`);
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page);
+        if (search) queryParams.append('search', search);
+        
+        // Append all active filters
+        Object.keys(filters).forEach(key => {
+            if (filters[key] !== '' && filters[key] !== null) {
+                queryParams.append(key, filters[key]);
+            }
+        });
+
+        const response = await api.get(`/products?${queryParams.toString()}`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Failed to fetch products');

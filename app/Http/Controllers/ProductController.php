@@ -37,6 +37,26 @@ class ProductController extends Controller implements HasMiddleware
             $query->where('name', 'like', "%{$request->search}%");
         }
 
+        // Apply filters
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('is_active')) {
+            $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
+        }
+        if ($request->filled('is_trending')) {
+            $query->where('is_trending', filter_var($request->is_trending, FILTER_VALIDATE_BOOLEAN));
+        }
+        if ($request->filled('is_top_seller')) {
+            $query->where('is_top_seller', filter_var($request->is_top_seller, FILTER_VALIDATE_BOOLEAN));
+        }
+        if ($request->filled('include_in_catalogue')) {
+            $query->where('include_in_catalogue', filter_var($request->include_in_catalogue, FILTER_VALIDATE_BOOLEAN));
+        }
+        if ($request->filled('product_for')) {
+            $query->where('product_for', $request->product_for);
+        }
+
         $products = $query->paginate(10);
 
         // Append the full URL for images
