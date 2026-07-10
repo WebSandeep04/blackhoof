@@ -6,6 +6,8 @@ import { createProduct, updateProduct, fetchProduct, clearCurrentProduct } from 
 import { ArrowLeft, Upload, X, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 export default function ProductForm() {
     const { id } = useParams();
@@ -247,7 +249,7 @@ export default function ProductForm() {
 
             return {
                 id: existingVariant ? existingVariant.id : null,
-                sku: existingVariant ? existingVariant.sku : `${slug ? slug.toUpperCase() : 'PROD'}-${attrNames.toUpperCase()}`,
+                sku: existingVariant ? existingVariant.sku : `${name ? name.substring(0, 4).toUpperCase() : 'PROD'}-${attrNames.toUpperCase()}`,
                 price: existingVariant ? existingVariant.price : (simplePrice || 0),
                 stock_quantity: existingVariant ? existingVariant.stock_quantity : (simpleStock || 0),
                 attributes: attrIds,
@@ -346,6 +348,14 @@ export default function ProductForm() {
         return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div></div>;
     }
 
+    const modules = {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{'list': 'ordered'}, {'list': 'bullet'}],
+            ['clean']
+        ],
+    };
+
     return (
         <div className="max-w-7xl mx-auto pb-12 space-y-6">
             <div className="flex items-center gap-4 mb-6">
@@ -370,13 +380,31 @@ export default function ProductForm() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
-                                <textarea value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows="3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
+                            <div className="pb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
+                                <div className="bg-white rounded-lg border overflow-hidden">
+                                    <ReactQuill 
+                                        theme="snow" 
+                                        value={shortDescription} 
+                                        onChange={setShortDescription} 
+                                        modules={modules}
+                                        className="h-40 mb-10"
+                                        placeholder="Brief description..."
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
-                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows="6" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none resize-none"></textarea>
+                            <div className="pb-4 mt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Long Description</label>
+                                <div className="bg-white rounded-lg border overflow-hidden">
+                                    <ReactQuill 
+                                        theme="snow" 
+                                        value={description} 
+                                        onChange={setDescription} 
+                                        modules={modules}
+                                        className="h-64 mb-12"
+                                        placeholder="Detailed product description..."
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
