@@ -38,15 +38,6 @@ export default function Dashboard() {
 
     if (!stats) return <div className="text-center text-gray-500 mt-10">Failed to load dashboard.</div>;
 
-    const statCards = [
-        { label: 'Blackhoof Products', value: stats.stats.products_blackhoof, icon: Package, color: 'bg-blue-500' },
-        { label: 'Satkirti Products', value: stats.stats.products_satkirti, icon: Package, color: 'bg-green-500' },
-        { label: 'Active Users', value: stats.stats.users, icon: Users, color: 'bg-brand-primary' },
-        { label: 'Saved Catalogues', value: stats.stats.catalogues, icon: BookOpen, color: 'bg-purple-500' },
-        { label: 'Published Blogs', value: stats.stats.blogs, icon: FileText, color: 'bg-orange-500' },
-        { label: 'Total Categories', value: stats.stats.categories, icon: Layers, color: 'bg-pink-500' },
-    ];
-
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Header */}
@@ -57,19 +48,97 @@ export default function Dashboard() {
                 <p className="text-gray-500 text-sm mt-1">Here is what's happening in your application today.</p>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {statCards.map((card, index) => (
-                    <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
-                        <div className={`p-4 rounded-xl text-white shadow-sm ${card.color}`}>
-                            <card.icon className="w-6 h-6" />
+            {/* Metrics Grid - Split */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Blackhoof Part */}
+                <div className="space-y-4 bg-blue-100 p-6 rounded-3xl border border-blue-300">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 border-b pb-2">
+                        <Package className="text-blue-500 w-5 h-5" /> Blackhoof
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-xl text-white shadow-sm bg-blue-500">
+                                <Package className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 mb-1">Products</p>
+                                <h3 className="text-3xl font-bold text-gray-900">{stats.stats.products_blackhoof.toLocaleString()}</h3>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 mb-1">{card.label}</p>
-                            <h3 className="text-3xl font-bold text-gray-900">{card.value.toLocaleString()}</h3>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-xl text-white shadow-sm bg-blue-400">
+                                <Layers className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 mb-1">Categories</p>
+                                <h3 className="text-3xl font-bold text-gray-900">{stats.stats.categories_blackhoof?.toLocaleString() || 0}</h3>
+                            </div>
                         </div>
                     </div>
-                ))}
+                </div>
+
+                {/* Satkirti Part */}
+                <div className="space-y-4 bg-green-100 p-6 rounded-3xl border border-green-300">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 border-b pb-2">
+                        <Package className="text-green-500 w-5 h-5" /> Satkirti
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-xl text-white shadow-sm bg-green-500">
+                                <Package className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 mb-1">Products</p>
+                                <h3 className="text-3xl font-bold text-gray-900">{stats.stats.products_satkirti.toLocaleString()}</h3>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-xl text-white shadow-sm bg-green-400">
+                                <Layers className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 mb-1">Categories</p>
+                                <h3 className="text-3xl font-bold text-gray-900">{stats.stats.categories_satkirti?.toLocaleString() || 0}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* General System Stats */}
+            <div className="mt-8 mb-8">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 border-b pb-2 mb-4">
+                    <Shield className="text-purple-500 w-5 h-5" /> Platform Overview
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                        <div className="p-4 rounded-xl text-white shadow-sm bg-brand-primary">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Active Users</p>
+                            <h3 className="text-3xl font-bold text-gray-900">{stats.stats.users.toLocaleString()}</h3>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                        <div className="p-4 rounded-xl text-white shadow-sm bg-purple-500">
+                            <BookOpen className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Saved Catalogues</p>
+                            <h3 className="text-3xl font-bold text-gray-900">{stats.stats.catalogues.toLocaleString()}</h3>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1 duration-300">
+                        <div className="p-4 rounded-xl text-white shadow-sm bg-orange-500">
+                            <FileText className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Published Blogs</p>
+                            <h3 className="text-3xl font-bold text-gray-900">{stats.stats.blogs.toLocaleString()}</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Recent Activity Tables */}

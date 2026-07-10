@@ -23,6 +23,8 @@ class DashboardController extends Controller
         $totalUsers = User::count();
         $totalBlogs = Blog::count();
         $totalCatalogues = SavedCatalogue::where('status', 'completed')->count();
+        $totalBlackhoofCategories = Category::where('category_for', 'blackhoof')->count();
+        $totalSatkirtiCategories = Category::where('category_for', 'satkirti')->count();
         $totalCategories = Category::count();
 
         // 2. Recent data (optimized, without loading large relationships unless necessary)
@@ -36,6 +38,8 @@ class DashboardController extends Controller
                 'users' => $totalUsers,
                 'blogs' => $totalBlogs,
                 'catalogues' => $totalCatalogues,
+                'categories_blackhoof' => $totalBlackhoofCategories,
+                'categories_satkirti' => $totalSatkirtiCategories,
                 'categories' => $totalCategories,
             ],
             'recent' => [
