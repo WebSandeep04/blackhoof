@@ -50,6 +50,7 @@ export default function AdminLayout() {
         { name: 'Categories', href: '/admin/categories', icon: ListTree, permission: 'view categories' },
         { name: 'Attributes', href: '/admin/attributes', icon: Tags, permission: 'view attributes' },
         { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText, permission: 'view blog categories' },
+        { name: 'Inquiry Status', href: '/admin/inquiry-statuses', icon: MessageSquare, permission: 'view inquiry statuses' },
     ].filter(item => !item.permission || hasPermission(item.permission));
 
     const navigation = [

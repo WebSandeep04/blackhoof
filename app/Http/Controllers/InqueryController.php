@@ -23,7 +23,7 @@ class InqueryController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Inquery::query();
+        $query = Inquery::with('status_details');
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%')
@@ -41,10 +41,6 @@ class InqueryController extends Controller implements HasMiddleware
 
     /**
      * Store a newly created resource in storage.
-     * Note: This could be open to the public depending on the route, 
-     * but we protect it for admins in middleware above, 
-     * wait, actually public form submissions need a separate open route or we remove 'create inqueries' middleware for 'store'.
-     * I will adjust middleware in routes or controller.
      */
     public function store(Request $request)
     {
@@ -54,7 +50,7 @@ class InqueryController extends Controller implements HasMiddleware
             'phone' => 'required|string|max:20',
             'message' => 'nullable|string',
             'inquery_for' => 'required|string|max:50',
-            'status' => 'boolean',
+            'status' => 'nullable|integer|exists:inquiry_statuses,id',
         ]);
 
         $inquery = Inquery::create($request->all());
@@ -67,7 +63,7 @@ class InqueryController extends Controller implements HasMiddleware
      */
     public function show(string $id)
     {
-        $inquery = Inquery::findOrFail($id);
+        $inquery = Inquery::with('status_details')->findOrFail($id);
         return response()->json($inquery);
     }
 
@@ -79,11 +75,15 @@ class InqueryController extends Controller implements HasMiddleware
         $inquery = Inquery::findOrFail($id);
 
         $request->validate([
-            'status' => 'boolean',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|max:255',
+            'phone' => 'sometimes|required|string|max:20',
+            'message' => 'nullable|string',
+            'inquery_for' => 'sometimes|required|string|max:50',
+            'status' => 'nullable|integer|exists:inquiry_statuses,id',
         ]);
 
-        // Mainly used for toggling status
-        $inquery->update($request->only('status'));
+        $inquery->update($request->all());
 
         return response()->json($inquery);
     }

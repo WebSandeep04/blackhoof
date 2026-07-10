@@ -17,4 +17,9 @@ class Inquery extends Model
         'inquery_for',
         'status',
     ];
+
+    public function status_details()
+    {
+        return $this->belongsTo(InquiryStatus::class, 'status');
+    }
 }

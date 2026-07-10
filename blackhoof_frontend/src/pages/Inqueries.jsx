@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import api from '../api/axios';
 import { Edit2, Trash2, Search, CheckCircle, XCircle } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
+import { fetchInquiryStatuses } from '../store/slices/inquiryStatusSlice';
 
 export default function Inqueries() {
+    const dispatch = useDispatch();
     const { user: authUser } = useSelector(state => state.auth);
+    const { inquiryStatuses } = useSelector(state => state.inquiryStatuses);
     const hasPermission = (permission) => authUser?.permissions?.includes(permission);
     
     const [inqueries, setInqueries] = useState([]);
@@ -18,7 +21,11 @@ export default function Inqueries() {
     // Modal states
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentInquery, setCurrentInquery] = useState({ id: null, name: '', email: '', phone: '', message: '', inquery_for: 'blackhoof', status: 1 });
+    const [currentInquery, setCurrentInquery] = useState({ id: null, name: '', email: '', phone: '', message: '', inquery_for: 'blackhoof', status: '' });
+
+    useEffect(() => {
+        dispatch(fetchInquiryStatuses({ all: true }));
+    }, [dispatch]);
 
     const fetchInqueries = async (currentPage = 1, search = '') => {
         setLoading(true);
@@ -54,25 +61,6 @@ export default function Inqueries() {
 
     const handlePageChange = (newPage) => {
         setPage(newPage);
-    };
-
-    const toggleStatus = async (inquery) => {
-        if (!hasPermission('edit inqueries')) return;
-        
-        try {
-            await api.put(`/inqueries/${inquery.id}`, { status: !inquery.status });
-            fetchInqueries(page, searchQuery);
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Status updated successfully',
-                showConfirmButton: false,
-                timer: 1500
-            });
-        } catch (error) {
-            Swal.fire('Error', 'Failed to update status', 'error');
-        }
     };
 
     const openForm = (inquery) => {
@@ -156,18 +144,9 @@ export default function Inqueries() {
             header: 'Status',
             key: 'status',
             render: (inquery) => (
-                <button 
-                    onClick={() => toggleStatus(inquery)}
-                    disabled={!hasPermission('edit inqueries')}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                        inquery.status 
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    } ${!hasPermission('edit inqueries') && 'opacity-50 cursor-not-allowed'}`}
-                >
-                    {inquery.status ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                    {inquery.status ? 'Active' : 'Inactive'}
-                </button>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {inquery.status_details ? inquery.status_details.name : 'Unknown'}
+                </span>
             )
         },
         {
@@ -293,28 +272,17 @@ export default function Inqueries() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <div className="flex items-center gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="status"
-                                            checked={currentInquery.status == 1}
-                                            onChange={() => setCurrentInquery({ ...currentInquery, status: 1 })}
-                                            className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
-                                        />
-                                        <span>Active</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="status"
-                                            checked={currentInquery.status == 0}
-                                            onChange={() => setCurrentInquery({ ...currentInquery, status: 0 })}
-                                            className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
-                                        />
-                                        <span>Inactive</span>
-                                    </label>
-                                </div>
+                                <select
+                                    value={currentInquery.status || ''}
+                                    onChange={(e) => setCurrentInquery({ ...currentInquery, status: e.target.value })}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
+                                    required
+                                >
+                                    <option value="">Select Status</option>
+                                    {inquiryStatuses.map(status => (
+                                        <option key={status.id} value={status.id}>{status.name}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="flex justify-end gap-3 mt-8 pt-6 border-t">

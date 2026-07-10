@@ -11,6 +11,7 @@ import savedCataloguesReducer from './slices/savedCataloguesSlice';
 import blogCategoriesReducer from './slices/blogCategoriesSlice';
 import blogsReducer from './slices/blogsSlice';
 import testimonialsReducer from './slices/testimonialsSlice';
+import inquiryStatusReducer from './slices/inquiryStatusSlice';
 
 export const store = configureStore({
     reducer: {
@@ -26,5 +27,6 @@ export const store = configureStore({
         blogCategories: blogCategoriesReducer,
         blogs: blogsReducer,
         testimonials: testimonialsReducer,
+        inquiryStatuses: inquiryStatusReducer,
     },
 });

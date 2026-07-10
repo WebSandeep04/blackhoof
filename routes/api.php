@@ -62,4 +62,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('permissions', function () {
         return response()->json(\Spatie\Permission\Models\Permission::all());
     });
+    Route::apiResource('inquiry_statuses', \App\Http\Controllers\InquiryStatusController::class);
 });
