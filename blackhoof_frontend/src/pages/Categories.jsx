@@ -16,7 +16,7 @@ export default function Categories() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
-    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true });
+    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true, image: null, imageUrl: null });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -58,17 +58,22 @@ export default function Categories() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const payload = { 
-                name: currentCategory.name, 
-                slug: currentCategory.slug, 
-                parent_id: currentCategory.parent_id ? parseInt(currentCategory.parent_id) : null,
-                is_active: currentCategory.is_active
-            };
+            const formData = new FormData();
+            formData.append('name', currentCategory.name);
+            formData.append('slug', currentCategory.slug);
+            if (currentCategory.parent_id) {
+                formData.append('parent_id', currentCategory.parent_id);
+            }
+            formData.append('is_active', currentCategory.is_active ? 1 : 0);
+            
+            if (currentCategory.image) {
+                formData.append('image', currentCategory.image);
+            }
 
             if (currentCategory.id) {
-                await dispatch(updateCategory({ id: currentCategory.id, categoryData: payload })).unwrap();
+                await dispatch(updateCategory({ id: currentCategory.id, categoryData: formData })).unwrap();
             } else {
-                await dispatch(createCategory(payload)).unwrap();
+                await dispatch(createCategory(formData)).unwrap();
             }
             
             setIsSubmitting(false);
@@ -91,8 +96,13 @@ export default function Categories() {
             
             // Format validation errors if present
             let errorMessage = 'There was a problem saving the category.';
-            if (error.errors && error.errors.slug) {
-                errorMessage = error.errors.slug.join(' ');
+            if (error.errors) {
+                const messages = Object.values(error.errors).flat();
+                if (messages.length > 0) {
+                    errorMessage = messages.join('\n');
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
             }
 
             Swal.fire({
@@ -141,13 +151,26 @@ export default function Categories() {
         }
     };
 
-    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true }) => {
+    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, image: null, imageUrl: null }) => {
         setCurrentCategory({ 
             ...category, 
             parent_id: category.parent_id || '',
-            is_active: category.is_active === undefined ? true : category.is_active 
+            is_active: category.is_active === undefined ? true : category.is_active,
+            image: null,
+            imageUrl: category.image ? `http://localhost:8000/storage/${category.image}` : null
         });
         setIsFormOpen(true);
+    };
+
+    const handleImageChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setCurrentCategory({
+                ...currentCategory,
+                image: file,
+                imageUrl: URL.createObjectURL(file)
+            });
+        }
     };
 
     return (
@@ -230,6 +253,21 @@ export default function Categories() {
                                 <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-700">Is Active</label>
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
+                                />
+                                {currentCategory.imageUrl && (
+                                    <div className="mt-2">
+                                        <img src={currentCategory.imageUrl} alt="Preview" className="h-20 w-20 object-cover rounded-lg border" />
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
                                 <button type="button" onClick={() => setIsFormOpen(false)} disabled={isSubmitting} className="px-5 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium disabled:opacity-50">Cancel</button>
                                 <button type="submit" disabled={isSubmitting} className="px-5 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-hover transition font-medium flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed">
@@ -245,6 +283,15 @@ export default function Categories() {
             <DataTable 
                 columns={[
                     { header: 'ID', key: 'id' },
+                    { 
+                        header: 'Image', 
+                        key: 'image',
+                        render: (category) => (
+                            category.image ? 
+                            <img src={`http://localhost:8000/storage/${category.image}`} alt={category.name} className="h-10 w-10 object-cover rounded-md border" /> 
+                            : <div className="h-10 w-10 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs">None</div>
+                        )
+                    },
                     { header: 'Name', key: 'name', cellClassName: 'font-medium text-black' },
                     { header: 'Slug', key: 'slug', cellClassName: 'text-gray-500' },
                     { 

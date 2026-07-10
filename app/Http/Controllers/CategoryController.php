@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -50,13 +51,20 @@ class CategoryController extends Controller implements HasMiddleware
             'slug' => 'required|string|max:255|unique:categories,slug',
             'parent_id' => 'nullable|exists:categories,id',
             'is_active' => 'boolean',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('categories', 'public');
+        }
 
         $category = Category::create([
             'name' => $request->name,
             'slug' => $request->slug,
             'parent_id' => $request->parent_id,
             'is_active' => $request->is_active ?? true,
+            'image' => $imagePath,
         ]);
 
         return response()->json($category->load('parent'), 201);
@@ -88,14 +96,24 @@ class CategoryController extends Controller implements HasMiddleware
             ],
             'parent_id' => 'nullable|exists:categories,id|not_in:' . $category->id,
             'is_active' => 'boolean',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
-        $category->update([
+        $data = [
             'name' => $request->name,
             'slug' => $request->slug,
             'parent_id' => $request->parent_id,
             'is_active' => $request->has('is_active') ? $request->is_active : $category->is_active,
-        ]);
+        ];
+
+        if ($request->hasFile('image')) {
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $category->update($data);
 
         return response()->json($category->load('parent'));
     }
@@ -106,6 +124,11 @@ class CategoryController extends Controller implements HasMiddleware
     public function destroy(string $id)
     {
         $category = Category::findOrFail($id);
+        
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+        
         $category->delete();
         return response()->json(null, 204);
     }

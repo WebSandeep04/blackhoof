@@ -20,7 +20,10 @@ export const fetchCategories = createAsyncThunk('categories/fetchAll', async ({ 
 
 export const createCategory = createAsyncThunk('categories/create', async (categoryData, { rejectWithValue }) => {
     try {
-        const response = await api.post('/categories', categoryData);
+        const isFormData = categoryData instanceof FormData;
+        const response = await api.post('/categories', categoryData, {
+            headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {}
+        });
         return response.data; 
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Failed to create category');
@@ -29,7 +32,15 @@ export const createCategory = createAsyncThunk('categories/create', async (categ
 
 export const updateCategory = createAsyncThunk('categories/update', async ({ id, categoryData }, { rejectWithValue }) => {
     try {
-        const response = await api.put(`/categories/${id}`, categoryData);
+        let response;
+        if (categoryData instanceof FormData) {
+            categoryData.append('_method', 'PUT');
+            response = await api.post(`/categories/${id}`, categoryData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+        } else {
+            response = await api.put(`/categories/${id}`, categoryData);
+        }
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Failed to update category');
