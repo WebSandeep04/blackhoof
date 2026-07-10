@@ -15,6 +15,7 @@ class Category extends Model
         'slug',
         'is_active',
         'image',
+        'category_for',
     ];
 
     protected $casts = [

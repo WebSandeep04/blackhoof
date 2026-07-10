@@ -33,6 +33,10 @@ class CategoryController extends Controller implements HasMiddleware
             $query->where('name', 'like', "%{$request->search}%");
         }
 
+        if ($request->filled('category_for')) {
+            $query->where('category_for', $request->category_for);
+        }
+
         if ($request->query('all') === 'true') {
             return response()->json(Category::with('attributes')->orderBy('name')->get());
         }
@@ -52,6 +56,7 @@ class CategoryController extends Controller implements HasMiddleware
             'parent_id' => 'nullable|exists:categories,id',
             'is_active' => 'boolean',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'category_for' => 'required|in:satkirti,blackhoof',
         ]);
 
         $imagePath = null;
@@ -65,6 +70,7 @@ class CategoryController extends Controller implements HasMiddleware
             'parent_id' => $request->parent_id,
             'is_active' => $request->is_active ?? true,
             'image' => $imagePath,
+            'category_for' => $request->category_for,
         ]);
 
         return response()->json($category->load('parent', 'attributes'), 201);
@@ -97,6 +103,7 @@ class CategoryController extends Controller implements HasMiddleware
             'parent_id' => 'nullable|exists:categories,id|not_in:' . $category->id,
             'is_active' => 'boolean',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'category_for' => 'required|in:satkirti,blackhoof',
         ]);
 
         $data = [
@@ -104,6 +111,7 @@ class CategoryController extends Controller implements HasMiddleware
             'slug' => $request->slug,
             'parent_id' => $request->parent_id,
             'is_active' => $request->has('is_active') ? $request->is_active : $category->is_active,
+            'category_for' => $request->category_for,
         ];
 
         if ($request->hasFile('image')) {

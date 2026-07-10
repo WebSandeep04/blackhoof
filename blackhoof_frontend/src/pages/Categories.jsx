@@ -18,7 +18,7 @@ export default function Categories() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
-    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true, image: null, imageUrl: null, selectedAttributes: [] });
+    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, selectedAttributes: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -69,6 +69,7 @@ export default function Categories() {
                 formData.append('parent_id', currentCategory.parent_id);
             }
             formData.append('is_active', currentCategory.is_active ? 1 : 0);
+            formData.append('category_for', currentCategory.category_for);
             
             if (currentCategory.image) {
                 formData.append('image', currentCategory.image);
@@ -159,11 +160,12 @@ export default function Categories() {
         }
     };
 
-    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, image: null, imageUrl: null, attributes: [] }) => {
+    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, attributes: [] }) => {
         setCurrentCategory({ 
             ...category, 
             parent_id: category.parent_id || '',
             is_active: category.is_active === undefined ? true : category.is_active,
+            category_for: category.category_for || 'blackhoof',
             image: null,
             imageUrl: category.image ? `http://localhost:8000/storage/${category.image}` : null,
             selectedAttributes: category.attributes ? category.attributes.map(a => a.id) : []
@@ -267,6 +269,18 @@ export default function Categories() {
                                                 .map(cat => (
                                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                             ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Category For</label>
+                                        <select 
+                                            value={currentCategory.category_for}
+                                            onChange={(e) => setCurrentCategory({ ...currentCategory, category_for: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
+                                        >
+                                            <option value="blackhoof">Blackhoof</option>
+                                            <option value="satkirti">Satkirti</option>
                                         </select>
                                     </div>
 
@@ -406,6 +420,15 @@ export default function Categories() {
                         render: (category) => (
                             <span className="text-gray-600">
                                 {category.parent ? category.parent.name : <span className="text-gray-400 italic">None</span>}
+                            </span>
+                        )
+                    },
+                    {
+                        header: 'Category For',
+                        key: 'category_for',
+                        render: (category) => (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize border">
+                                {category.category_for || 'blackhoof'}
                             </span>
                         )
                     },
