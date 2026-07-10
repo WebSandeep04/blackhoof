@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../store/slices/authSlice';
-import { Users, Shield, LogOut, Menu, Settings, ChevronRight, ChevronLeft, Package, ListTree, Tags, BookOpen, FileText, LayoutDashboard } from 'lucide-react';
+import { Users, Shield, LogOut, Menu, Settings, ChevronRight, ChevronLeft, Package, ListTree, Tags, BookOpen, FileText, LayoutDashboard, MessageSquare } from 'lucide-react';
 
 export default function AdminLayout() {
     const dispatch = useDispatch();
@@ -40,6 +40,7 @@ export default function AdminLayout() {
         { name: 'Products', href: '/admin/products', icon: Package, permission: 'view products' },
         { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen, permission: 'view saved catalogues' },
         { name: 'Blogs', href: '/admin/blogs', icon: FileText, permission: 'view blogs' },
+        { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquare, permission: 'view testimonials' },
     ].filter(item => !item.permission || hasPermission(item.permission));
 
     const setupNavigation = [

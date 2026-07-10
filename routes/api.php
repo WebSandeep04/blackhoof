@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::apiResource('blog-categories', BlogCategoryController::class);
     Route::apiResource('blogs', BlogController::class);
+    Route::apiResource('testimonials', \App\Http\Controllers\TestimonialController::class);
     
     // Saved Catalogues management
     Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);

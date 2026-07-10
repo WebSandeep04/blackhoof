@@ -10,6 +10,7 @@ import catalogueCartReducer from './slices/catalogueCartSlice';
 import savedCataloguesReducer from './slices/savedCataloguesSlice';
 import blogCategoriesReducer from './slices/blogCategoriesSlice';
 import blogsReducer from './slices/blogsSlice';
+import testimonialsReducer from './slices/testimonialsSlice';
 
 export const store = configureStore({
     reducer: {
@@ -24,5 +25,6 @@ export const store = configureStore({
         savedCatalogues: savedCataloguesReducer,
         blogCategories: blogCategoriesReducer,
         blogs: blogsReducer,
+        testimonials: testimonialsReducer,
     },
 });

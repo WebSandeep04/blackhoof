@@ -15,6 +15,8 @@ import AdminCatalogue from './pages/AdminCatalogue';
 import BlogCategories from './pages/BlogCategories';
 import Blogs from './pages/Blogs';
 import BlogForm from './pages/BlogForm';
+import Testimonials from './pages/Testimonials';
+import TestimonialForm from './pages/TestimonialForm';
 
 import CataloguePreview from './pages/CataloguePreview';
 
@@ -47,6 +49,9 @@ function App() {
             <Route path="blogs" element={<Blogs />} />
             <Route path="blogs/create" element={<BlogForm />} />
             <Route path="blogs/edit/:id" element={<BlogForm />} />
+            <Route path="testimonials" element={<Testimonials />} />
+            <Route path="testimonials/create" element={<TestimonialForm />} />
+            <Route path="testimonials/edit/:id" element={<TestimonialForm />} />
           </Route>
 
           {/* Default Route */}
