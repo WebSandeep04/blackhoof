@@ -21,6 +21,7 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/forgot-password/reset', [AuthController::class, 'verifyOtpAndResetPassword']);
 Route::get('/catalogue', [CatalogueController::class, 'index']);
 Route::get('/saved-catalogues/{id}/download', [SavedCatalogueController::class, 'download']);
+Route::post('/inqueries', [\App\Http\Controllers\InqueryController::class, 'store']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -48,6 +49,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('blog-categories', BlogCategoryController::class);
     Route::apiResource('blogs', BlogController::class);
     Route::apiResource('testimonials', \App\Http\Controllers\TestimonialController::class);
+    
+    // We already have a public store for inqueries, so we exclude store here
+    Route::apiResource('inqueries', \App\Http\Controllers\InqueryController::class)->except(['store']);
     
     // Saved Catalogues management
     Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
