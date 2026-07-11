@@ -37,11 +37,11 @@ export default function AdminLayout() {
 
     const mainNavigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Inqueries', href: '/admin/inqueries', icon: MessageSquare, permission: 'view inqueries' },
         { name: 'Products', href: '/admin/products', icon: Package, permission: 'view products' },
         { name: 'Catalogue', href: '/admin/catalogue', icon: BookOpen, permission: 'view saved catalogues' },
         { name: 'Blogs', href: '/admin/blogs', icon: FileText, permission: 'view blogs' },
         { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquare, permission: 'view testimonials' },
+        { name: 'Inqueries', href: '/admin/inqueries', icon: MessageSquare, permission: 'view inqueries' },
     ].filter(item => !item.permission || hasPermission(item.permission));
 
     const setupNavigation = [

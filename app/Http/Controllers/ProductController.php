@@ -31,7 +31,7 @@ class ProductController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'variants', 'images']);
+        $query = Product::with(['category', 'variants', 'variants.images', 'images']);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', "%{$request->search}%");
@@ -120,7 +120,7 @@ class ProductController extends Controller implements HasMiddleware
                 throw new \Exception("Variants data is invalid or empty.");
             }
 
-            foreach ($variantsData as $variantData) {
+            foreach ($variantsData as $index => $variantData) {
                 $variant = $product->variants()->create([
                     'sku' => $variantData['sku'] ?? $product->slug . '-' . uniqid(),
                     'price' => $variantData['price'] ?? 0,
@@ -130,6 +130,19 @@ class ProductController extends Controller implements HasMiddleware
                 // Attach attributes if any
                 if (!empty($variantData['attributes']) && is_array($variantData['attributes'])) {
                     $variant->attributeValues()->attach($variantData['attributes']);
+                }
+
+                // Handle variant images
+                if ($request->hasFile("variant_images_{$index}")) {
+                    foreach ($request->file("variant_images_{$index}") as $imgIndex => $file) {
+                        $path = $file->store('products', 'public');
+                        $product->images()->create([
+                            'product_variant_id' => $variant->id,
+                            'image_path' => $path,
+                            'is_main' => count($product->images) === 0 && $imgIndex === 0,
+                            'sort_order' => $imgIndex,
+                        ]);
+                    }
                 }
             }
 
@@ -159,7 +172,7 @@ class ProductController extends Controller implements HasMiddleware
      */
     public function show(string $id)
     {
-        $product = Product::with(['category', 'variants.attributeValues', 'images'])->findOrFail($id);
+        $product = Product::with(['category', 'variants.attributeValues', 'variants.images', 'images'])->findOrFail($id);
         
         $product->images->transform(function ($image) {
             $image->url = $image->url;
@@ -227,10 +240,16 @@ class ProductController extends Controller implements HasMiddleware
 
             $submittedVariantIds = collect($variantsData)->pluck('id')->filter()->toArray();
             
+            // 3. Prepare Existing Images
+            $existingImageIds = [];
+            if ($request->filled('existing_images')) {
+                $existingImageIds = json_decode($request->existing_images, true) ?? [];
+            }
+            
             // Delete removed variants
             $product->variants()->whereNotIn('id', $submittedVariantIds)->delete();
 
-            foreach ($variantsData as $variantData) {
+            foreach ($variantsData as $index => $variantData) {
                 if (isset($variantData['id'])) {
                     // Update existing
                     $variant = ProductVariant::find($variantData['id']);
@@ -255,14 +274,24 @@ class ProductController extends Controller implements HasMiddleware
                         $variant->attributeValues()->attach($variantData['attributes']);
                     }
                 }
+
+                // Handle variant images
+                if (isset($variant) && $request->hasFile("variant_images_{$index}")) {
+                    $maxSort = $product->images()->max('sort_order') ?? 0;
+                    foreach ($request->file("variant_images_{$index}") as $imgIndex => $file) {
+                        $path = $file->store('products', 'public');
+                        $product->images()->create([
+                            'product_variant_id' => $variant->id,
+                            'image_path' => $path,
+                            'is_main' => count($product->images) === 0 && count($existingImageIds) === 0 && $imgIndex === 0,
+                            'sort_order' => $maxSort + $imgIndex + 1,
+                        ]);
+                    }
+                }
             }
 
             // 3. Handle Images
             // First, remove images not in 'existing_images'
-            $existingImageIds = [];
-            if ($request->filled('existing_images')) {
-                $existingImageIds = json_decode($request->existing_images, true) ?? [];
-            }
             
             $imagesToDelete = $product->images()->whereNotIn('id', $existingImageIds)->get();
             foreach ($imagesToDelete as $img) {

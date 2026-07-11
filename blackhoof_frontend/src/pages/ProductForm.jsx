@@ -37,10 +37,7 @@ export default function ProductForm() {
     const [includeInCatalogue, setIncludeInCatalogue] = useState(true);
     const [productFor, setProductFor] = useState('blackhoof');
     const [hasVariants, setHasVariants] = useState(true); // Default to true as requested
-    
-    // Images
-    const [imageFiles, setImageFiles] = useState([]);
-    const [existingImages, setExistingImages] = useState([]); // For edit mode
+    // Images have been moved to variant level
 
     // Simple Product Data
     const [simplePrice, setSimplePrice] = useState('');
@@ -113,7 +110,6 @@ export default function ProductForm() {
             setIncludeInCatalogue(currentProduct.include_in_catalogue ?? true);
             setProductFor(currentProduct.product_for || 'blackhoof');
             
-            setExistingImages(currentProduct.images || []);
 
             // Check if it has multiple variants, or variants with attributes
             const hasMultipleVariants = currentProduct.variants?.length > 1;
@@ -127,7 +123,9 @@ export default function ProductForm() {
                     price: v.price,
                     stock_quantity: v.stock_quantity,
                     attributes: (v.attribute_values || []).map(av => av.id),
-                    _attributeNames: (v.attribute_values || []).map(av => av.value).join(', ') // Display helper
+                    _attributeNames: (v.attribute_values || []).map(av => av.value).join(', '), // Display helper
+                    existingImages: v.images || [],
+                    newImages: []
                 })));
                 
                 // Extract unique attribute IDs and Value IDs used
@@ -149,26 +147,34 @@ export default function ProductForm() {
                     setSimpleSku(defaultVariant.sku);
                     setSimpleStock(defaultVariant.stock_quantity);
                     // keep track of ID for updating
-                    setVariants([{ id: defaultVariant.id }]);
+                    setVariants([{ 
+                        id: defaultVariant.id, 
+                        existingImages: defaultVariant.images || [],
+                        newImages: [] 
+                    }]);
                 }
             }
         }
     }, [currentProduct, isEditMode]);
 
 
-    const handleImageChange = (e) => {
+    const handleVariantImageChange = (index, e) => {
         const files = Array.from(e.target.files);
-        setImageFiles(prev => [...prev, ...files]);
+        const newVariants = [...variants];
+        newVariants[index].newImages = [...(newVariants[index].newImages || []), ...files];
+        setVariants(newVariants);
     };
 
-    const removeNewImage = (index) => {
-        const newFiles = [...imageFiles];
-        newFiles.splice(index, 1);
-        setImageFiles(newFiles);
+    const removeVariantNewImage = (variantIndex, imageIndex) => {
+        const newVariants = [...variants];
+        newVariants[variantIndex].newImages.splice(imageIndex, 1);
+        setVariants(newVariants);
     };
 
-    const removeExistingImage = (idToRemove) => {
-        setExistingImages(prev => prev.filter(img => img.id !== idToRemove));
+    const removeVariantExistingImage = (variantIndex, idToRemove) => {
+        const newVariants = [...variants];
+        newVariants[variantIndex].existingImages = newVariants[variantIndex].existingImages.filter(img => img.id !== idToRemove);
+        setVariants(newVariants);
     };
 
     const toggleAttribute = (attributeId) => {
@@ -253,7 +259,9 @@ export default function ProductForm() {
                 price: existingVariant ? existingVariant.price : (simplePrice || 0),
                 stock_quantity: existingVariant ? existingVariant.stock_quantity : (simpleStock || 0),
                 attributes: attrIds,
-                _attributeNames: attrNames.replace(/-/g, ', ') // For display
+                _attributeNames: attrNames.replace(/-/g, ', '), // For display
+                existingImages: existingVariant ? (existingVariant.images || []) : [],
+                newImages: []
             };
         });
 
@@ -303,16 +311,36 @@ export default function ProductForm() {
         formData.append('include_in_catalogue', includeInCatalogue ? 1 : 0);
         formData.append('product_for', productFor);
         formData.append('has_variants', hasVariants ? 1 : 0);
-        formData.append('variants', JSON.stringify(finalVariants));
+        // Clean up variants payload so we don't send File objects in JSON
+        const variantsPayload = finalVariants.map(v => ({
+            id: v.id,
+            sku: v.sku,
+            price: v.price,
+            stock_quantity: v.stock_quantity,
+            attributes: v.attributes
+        }));
+        formData.append('variants', JSON.stringify(variantsPayload));
 
-        // Append new images
-        imageFiles.forEach((file, index) => {
-            formData.append(`images[${index}]`, file);
+        // Append new variant images
+        finalVariants.forEach((variant, index) => {
+            if (variant.newImages && variant.newImages.length > 0) {
+                variant.newImages.forEach(file => {
+                    formData.append(`variant_images_${index}[]`, file);
+                });
+            }
         });
 
-        // Append existing image IDs for edit mode
+        // Append existing image IDs across all variants for edit mode
         if (isEditMode) {
-            formData.append('existing_images', JSON.stringify(existingImages.map(img => img.id)));
+            const allExistingIds = [];
+            finalVariants.forEach(variant => {
+                if (variant.existingImages) {
+                    variant.existingImages.forEach(img => {
+                        allExistingIds.push(img.id);
+                    });
+                }
+            });
+            formData.append('existing_images', JSON.stringify(allExistingIds));
         }
 
         setIsSubmitting(true);
@@ -409,43 +437,6 @@ export default function ProductForm() {
                         </div>
                     )}
 
-                {/* Images Card */}
-                {hasPermission('create/edit product images') && (
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product Images</h2>
-                        
-                        <div className="flex flex-wrap gap-4 mb-4">
-                            {/* Existing Images */}
-                            {existingImages.map(img => (
-                                <div key={img.id} className="relative w-24 h-24 border rounded-lg overflow-hidden group">
-                                    <img src={img.url} alt="Product" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeExistingImage(img.id)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                        <Trash2 className="w-6 h-6" />
-                                    </button>
-                                    {img.is_main && <span className="absolute bottom-0 inset-x-0 bg-brand-primary text-white text-[10px] text-center py-0.5">Main</span>}
-                                </div>
-                            ))}
-
-                            {/* New Images */}
-                            {imageFiles.map((file, index) => (
-                                <div key={index} className="relative w-24 h-24 border border-brand-primary/50 rounded-lg overflow-hidden group">
-                                    <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeNewImage(index)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                    <span className="absolute bottom-0 inset-x-0 bg-brand-primary/80 text-white text-[10px] text-center py-0.5">New</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                            <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                            <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-600 font-medium">Click or drag images to upload</p>
-                            <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF up to 2MB</p>
-                        </div>
-                    </div>
-                )}
 
                 {/* Product Type & Pricing Card */}
                 {hasPermission('create/edit product inventory') && (
@@ -521,20 +512,47 @@ export default function ProductForm() {
                                                 <th className="px-4 py-3 font-medium w-32">Price *</th>
                                                 <th className="px-4 py-3 font-medium w-48">SKU</th>
                                                 <th className="px-4 py-3 font-medium w-32">Stock *</th>
+                                                <th className="px-4 py-3 font-medium w-64">Images</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {variants.map((variant, index) => (
-                                                <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-medium text-gray-900">{variant._attributeNames}</td>
-                                                    <td className="px-4 py-2">
+                                                <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50 align-top">
+                                                    <td className="px-4 py-3 font-medium text-gray-900 pt-4">{variant._attributeNames || 'Default'}</td>
+                                                    <td className="px-4 py-2 pt-3">
                                                         <input type="number" step="0.01" required value={variant.price} onChange={e => updateVariantField(index, 'price', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td className="px-4 py-2 pt-3">
                                                         <input type="text" value={variant.sku} onChange={e => updateVariantField(index, 'sku', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td className="px-4 py-2 pt-3">
                                                         <input type="number" required value={variant.stock_quantity} onChange={e => updateVariantField(index, 'stock_quantity', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="relative overflow-hidden w-full h-8 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
+                                                                <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImageChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                                <Upload className="w-3 h-3 mr-1" /> Add Images
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mt-1 max-w-full">
+                                                                {(variant.existingImages || []).map(img => (
+                                                                    <div key={img.id} className="relative w-8 h-8 rounded border overflow-hidden group">
+                                                                        <img src={img.url} alt="Variant" className="w-full h-full object-cover" />
+                                                                        <button type="button" onClick={() => removeVariantExistingImage(index, img.id)} className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                {(variant.newImages || []).map((file, imgIdx) => (
+                                                                    <div key={imgIdx} className="relative w-8 h-8 rounded border border-brand-primary/50 overflow-hidden group">
+                                                                        <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                                                                        <button type="button" onClick={() => removeVariantNewImage(index, imgIdx)} className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                                            <X className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

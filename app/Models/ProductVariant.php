@@ -25,4 +25,9 @@ class ProductVariant extends Model
     {
         return $this->belongsToMany(AttributeValue::class, 'product_variant_attribute_value');
     }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class, 'product_variant_id')->orderBy('sort_order');
+    }
 }
