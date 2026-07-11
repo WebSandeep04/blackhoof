@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
 import { createProduct, updateProduct, fetchProduct, clearCurrentProduct } from '../store/slices/productsSlice';
-import { ArrowLeft, Upload, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Trash2, Star } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import ReactQuill from 'react-quill-new';
@@ -125,7 +125,8 @@ export default function ProductForm() {
                     attributes: (v.attribute_values || []).map(av => av.id),
                     _attributeNames: (v.attribute_values || []).map(av => av.value).join(', '), // Display helper
                     existingImages: v.images || [],
-                    newImages: []
+                    newImages: [],
+                    mainImageKey: v.images?.find(img => img.is_main) ? `existing-${v.images.find(img => img.is_main).id}` : null
                 })));
                 
                 // Extract unique attribute IDs and Value IDs used
@@ -150,7 +151,8 @@ export default function ProductForm() {
                     setVariants([{ 
                         id: defaultVariant.id, 
                         existingImages: defaultVariant.images || [],
-                        newImages: [] 
+                        newImages: [],
+                        mainImageKey: defaultVariant.images?.find(img => img.is_main) ? `existing-${defaultVariant.images.find(img => img.is_main).id}` : null
                     }]);
                 }
             }
@@ -168,12 +170,24 @@ export default function ProductForm() {
     const removeVariantNewImage = (variantIndex, imageIndex) => {
         const newVariants = [...variants];
         newVariants[variantIndex].newImages.splice(imageIndex, 1);
+        if (newVariants[variantIndex].mainImageKey === `new-${imageIndex}`) {
+            newVariants[variantIndex].mainImageKey = null;
+        } else if (newVariants[variantIndex].mainImageKey?.startsWith('new-')) {
+            // Adjust index for subsequent new images if they were marked as main
+            const currentMainIndex = parseInt(newVariants[variantIndex].mainImageKey.split('-')[1]);
+            if (currentMainIndex > imageIndex) {
+                newVariants[variantIndex].mainImageKey = `new-${currentMainIndex - 1}`;
+            }
+        }
         setVariants(newVariants);
     };
 
     const removeVariantExistingImage = (variantIndex, idToRemove) => {
         const newVariants = [...variants];
         newVariants[variantIndex].existingImages = newVariants[variantIndex].existingImages.filter(img => img.id !== idToRemove);
+        if (newVariants[variantIndex].mainImageKey === `existing-${idToRemove}`) {
+            newVariants[variantIndex].mainImageKey = null;
+        }
         setVariants(newVariants);
     };
 
@@ -261,7 +275,8 @@ export default function ProductForm() {
                 attributes: attrIds,
                 _attributeNames: attrNames.replace(/-/g, ', '), // For display
                 existingImages: existingVariant ? (existingVariant.images || []) : [],
-                newImages: []
+                newImages: [],
+                mainImageKey: existingVariant && existingVariant.images?.find(img => img.is_main) ? `existing-${existingVariant.images.find(img => img.is_main).id}` : null
             };
         });
 
@@ -271,6 +286,12 @@ export default function ProductForm() {
     const updateVariantField = (index, field, value) => {
         const newVariants = [...variants];
         newVariants[index][field] = value;
+        setVariants(newVariants);
+    };
+
+    const setMainVariantImage = (variantIndex, key) => {
+        const newVariants = [...variants];
+        newVariants[variantIndex].mainImageKey = key;
         setVariants(newVariants);
     };
 
@@ -321,8 +342,9 @@ export default function ProductForm() {
         }));
         formData.append('variants', JSON.stringify(variantsPayload));
 
-        // Append new variant images
+        // Append new variant images and main image key
         finalVariants.forEach((variant, index) => {
+            formData.append(`variant_main_image_${index}`, variant.mainImageKey || '');
             if (variant.newImages && variant.newImages.length > 0) {
                 variant.newImages.forEach(file => {
                     formData.append(`variant_images_${index}[]`, file);
@@ -530,25 +552,37 @@ export default function ProductForm() {
                                                     </td>
                                                     <td className="px-4 py-2">
                                                         <div className="flex flex-col gap-2">
-                                                            <div className="relative overflow-hidden w-full h-8 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
+                                                            <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
                                                                 <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImageChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
                                                                 <Upload className="w-3 h-3 mr-1" /> Add Images
                                                             </div>
                                                             <div className="flex flex-wrap gap-1 mt-1 max-w-full">
                                                                 {(variant.existingImages || []).map(img => (
-                                                                    <div key={img.id} className="relative w-8 h-8 rounded border overflow-hidden group">
+                                                                    <div key={img.id} className="relative w-12 h-12 rounded border overflow-hidden group">
                                                                         <img src={img.url} alt="Variant" className="w-full h-full object-cover" />
-                                                                        <button type="button" onClick={() => removeVariantExistingImage(index, img.id)} className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                                                            <Trash2 className="w-3 h-3" />
-                                                                        </button>
+                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                            <button type="button" onClick={() => setMainVariantImage(index, `existing-${img.id}`)} className="text-white hover:text-yellow-400">
+                                                                                <Star className={`w-3 h-3 ${variant.mainImageKey === `existing-${img.id}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                                                                            </button>
+                                                                            <button type="button" onClick={() => removeVariantExistingImage(index, img.id)} className="text-white hover:text-red-400">
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                        {variant.mainImageKey === `existing-${img.id}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
                                                                     </div>
                                                                 ))}
                                                                 {(variant.newImages || []).map((file, imgIdx) => (
-                                                                    <div key={imgIdx} className="relative w-8 h-8 rounded border border-brand-primary/50 overflow-hidden group">
+                                                                    <div key={imgIdx} className="relative w-12 h-12 rounded border border-brand-primary/50 overflow-hidden group">
                                                                         <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
-                                                                        <button type="button" onClick={() => removeVariantNewImage(index, imgIdx)} className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                                                            <X className="w-3 h-3" />
-                                                                        </button>
+                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                            <button type="button" onClick={() => setMainVariantImage(index, `new-${imgIdx}`)} className="text-white hover:text-yellow-400">
+                                                                                <Star className={`w-3 h-3 ${variant.mainImageKey === `new-${imgIdx}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                                                                            </button>
+                                                                            <button type="button" onClick={() => removeVariantNewImage(index, imgIdx)} className="text-white hover:text-red-400">
+                                                                                <X className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                        {variant.mainImageKey === `new-${imgIdx}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
                                                                     </div>
                                                                 ))}
                                                             </div>

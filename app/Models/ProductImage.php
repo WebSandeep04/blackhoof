@@ -21,6 +21,8 @@ class ProductImage extends Model
         'is_main' => 'boolean',
     ];
 
+    protected $appends = ['url'];
+
     public function product()
     {
         return $this->belongsTo(Product::class);

@@ -59,15 +59,6 @@ class ProductController extends Controller implements HasMiddleware
 
         $products = $query->paginate(10);
 
-        // Append the full URL for images
-        $products->getCollection()->transform(function ($product) {
-            $product->images->transform(function ($image) {
-                $image->url = $image->url;
-                return $image;
-            });
-            return $product;
-        });
-
         return response()->json($products);
     }
 
@@ -133,13 +124,21 @@ class ProductController extends Controller implements HasMiddleware
                 }
 
                 // Handle variant images
+                $mainImageKey = $request->input("variant_main_image_{$index}");
+
                 if ($request->hasFile("variant_images_{$index}")) {
                     foreach ($request->file("variant_images_{$index}") as $imgIndex => $file) {
                         $path = $file->store('products', 'public');
+                        
+                        $isMain = ($mainImageKey === "new-{$imgIndex}");
+                        if (empty($mainImageKey) && $imgIndex === 0) {
+                            $isMain = true;
+                        }
+
                         $product->images()->create([
                             'product_variant_id' => $variant->id,
                             'image_path' => $path,
-                            'is_main' => count($product->images) === 0 && $imgIndex === 0,
+                            'is_main' => $isMain,
                             'sort_order' => $imgIndex,
                         ]);
                     }
@@ -173,11 +172,6 @@ class ProductController extends Controller implements HasMiddleware
     public function show(string $id)
     {
         $product = Product::with(['category', 'variants.attributeValues', 'variants.images', 'images'])->findOrFail($id);
-        
-        $product->images->transform(function ($image) {
-            $image->url = $image->url;
-            return $image;
-        });
 
         return response()->json($product);
     }
@@ -276,16 +270,36 @@ class ProductController extends Controller implements HasMiddleware
                 }
 
                 // Handle variant images
-                if (isset($variant) && $request->hasFile("variant_images_{$index}")) {
-                    $maxSort = $product->images()->max('sort_order') ?? 0;
-                    foreach ($request->file("variant_images_{$index}") as $imgIndex => $file) {
-                        $path = $file->store('products', 'public');
-                        $product->images()->create([
-                            'product_variant_id' => $variant->id,
-                            'image_path' => $path,
-                            'is_main' => count($product->images) === 0 && count($existingImageIds) === 0 && $imgIndex === 0,
-                            'sort_order' => $maxSort + $imgIndex + 1,
-                        ]);
+                $mainImageKey = $request->input("variant_main_image_{$index}");
+
+                if (isset($variant)) {
+                    if ($mainImageKey && str_starts_with($mainImageKey, 'existing-')) {
+                        $mainId = str_replace('existing-', '', $mainImageKey);
+                        // Reset all to false for this variant
+                        $product->images()->where('product_variant_id', $variant->id)->update(['is_main' => false]);
+                        // Set the selected one to true
+                        $product->images()->where('id', $mainId)->update(['is_main' => true]);
+                    }
+
+                    if ($request->hasFile("variant_images_{$index}")) {
+                        $maxSort = $product->images()->max('sort_order') ?? 0;
+                        foreach ($request->file("variant_images_{$index}") as $imgIndex => $file) {
+                            $path = $file->store('products', 'public');
+                            
+                            $isMain = ($mainImageKey === "new-{$imgIndex}");
+                            if ($isMain) {
+                                $product->images()->where('product_variant_id', $variant->id)->update(['is_main' => false]);
+                            } elseif (empty($mainImageKey) && $product->images()->where('product_variant_id', $variant->id)->count() === 0 && $imgIndex === 0) {
+                                $isMain = true;
+                            }
+
+                            $product->images()->create([
+                                'product_variant_id' => $variant->id,
+                                'image_path' => $path,
+                                'is_main' => $isMain,
+                                'sort_order' => $maxSort + $imgIndex + 1,
+                            ]);
+                        }
                     }
                 }
             }
