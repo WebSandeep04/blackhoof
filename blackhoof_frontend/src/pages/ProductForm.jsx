@@ -530,7 +530,7 @@ export default function ProductForm() {
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                                             <tr>
-                                                <th className="px-4 py-3 font-medium">Variant</th>
+                                                <th className="px-4 py-3 font-medium w-1/4 min-w-[150px]">Variant</th>
                                                 <th className="px-4 py-3 font-medium w-32">Price *</th>
                                                 <th className="px-4 py-3 font-medium w-48">SKU</th>
                                                 <th className="px-4 py-3 font-medium w-32">Stock *</th>
@@ -540,17 +540,17 @@ export default function ProductForm() {
                                         <tbody>
                                             {variants.map((variant, index) => (
                                                 <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50 align-top">
-                                                    <td className="px-4 py-3 font-medium text-gray-900 pt-4">{variant._attributeNames || 'Default'}</td>
-                                                    <td className="px-4 py-2 pt-3">
+                                                    <td className="px-4 pt-4 pb-3 font-medium text-gray-900 leading-relaxed">{variant._attributeNames || 'Default'}</td>
+                                                    <td className="px-4 pt-4 pb-3">
                                                         <input type="number" step="0.01" required value={variant.price} onChange={e => updateVariantField(index, 'price', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
                                                     </td>
-                                                    <td className="px-4 py-2 pt-3">
+                                                    <td className="px-4 pt-4 pb-3">
                                                         <input type="text" value={variant.sku} onChange={e => updateVariantField(index, 'sku', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
                                                     </td>
-                                                    <td className="px-4 py-2 pt-3">
+                                                    <td className="px-4 pt-4 pb-3">
                                                         <input type="number" required value={variant.stock_quantity} onChange={e => updateVariantField(index, 'stock_quantity', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td className="px-4 pt-4 pb-3">
                                                         <div className="flex flex-col gap-2">
                                                             <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
                                                                 <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImageChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
