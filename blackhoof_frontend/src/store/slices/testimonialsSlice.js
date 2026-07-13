@@ -1,12 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axios';
 
-export const fetchTestimonials = createAsyncThunk('testimonials/fetchAll', async (params = { page: 1, search: '' }, { rejectWithValue }) => {
+export const fetchTestimonials = createAsyncThunk('testimonials/fetchAll', async (params = { page: 1, search: '', start_date: '', end_date: '' }, { rejectWithValue }) => {
     try {
         const response = await api.get('/testimonials', {
             params: {
                 page: params.page,
-                search: params.search
+                search: params.search,
+                start_date: params.start_date,
+                end_date: params.end_date
             }
         });
         return response.data;

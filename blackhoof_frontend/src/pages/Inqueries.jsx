@@ -16,6 +16,7 @@ export default function Inqueries() {
     const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterFor, setFilterFor] = useState('all');
     const [page, setPage] = useState(1);
     
     // Modal states
@@ -27,12 +28,14 @@ export default function Inqueries() {
         dispatch(fetchInquiryStatuses({ all: true }));
     }, [dispatch]);
 
-    const fetchInqueries = async (currentPage = 1, search = '') => {
+    const fetchInqueries = async (currentPage = 1, search = '', filter = 'all') => {
         setLoading(true);
         try {
-            const response = await api.get('/inqueries', {
-                params: { page: currentPage, search }
-            });
+            const params = { page: currentPage, search };
+            if (filter !== 'all') {
+                params.inquery_for = filter;
+            }
+            const response = await api.get('/inqueries', { params });
             setInqueries(response.data.data);
             setPagination({
                 current_page: response.data.current_page,
@@ -49,10 +52,10 @@ export default function Inqueries() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchInqueries(page, searchQuery);
+            fetchInqueries(page, searchQuery, filterFor);
         }, 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, page]);
+    }, [searchQuery, page, filterFor]);
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -184,7 +187,18 @@ export default function Inqueries() {
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex justify-end items-center gap-4 w-full">
+                <div className="flex gap-2">
+                    {['all', 'blackhoof', 'satkirti'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => { setFilterFor(tab); setPage(1); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${filterFor === tab ? 'bg-brand-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex justify-end items-center gap-4">
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-4 w-4 text-gray-400" />

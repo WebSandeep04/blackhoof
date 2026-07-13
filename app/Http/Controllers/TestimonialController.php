@@ -28,6 +28,14 @@ class TestimonialController extends Controller implements HasMiddleware
                   ->orWhere('text', 'like', "%{$request->search}%");
         }
 
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
         return response()->json($query->latest()->paginate(10));
     }
 
