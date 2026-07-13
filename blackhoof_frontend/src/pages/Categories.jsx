@@ -18,7 +18,7 @@ export default function Categories() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
-    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, selectedAttributes: [] });
+    const [currentCategory, setCurrentCategory] = useState({ id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, selectedAttributes: [], selectedAttributeValues: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -77,11 +77,19 @@ export default function Categories() {
 
             if (currentCategory.id) {
                 await dispatch(updateCategory({ id: currentCategory.id, categoryData: formData })).unwrap();
-                await dispatch(syncCategoryAttributes({ id: currentCategory.id, attributes: currentCategory.selectedAttributes })).unwrap();
+                await dispatch(syncCategoryAttributes({ 
+                    id: currentCategory.id, 
+                    attributes: currentCategory.selectedAttributes,
+                    attribute_values: currentCategory.selectedAttributeValues
+                })).unwrap();
             } else {
                 const newCat = await dispatch(createCategory(formData)).unwrap();
-                if (currentCategory.selectedAttributes.length > 0) {
-                    await dispatch(syncCategoryAttributes({ id: newCat.id, attributes: currentCategory.selectedAttributes })).unwrap();
+                if (currentCategory.selectedAttributes.length > 0 || currentCategory.selectedAttributeValues.length > 0) {
+                    await dispatch(syncCategoryAttributes({ 
+                        id: newCat.id, 
+                        attributes: currentCategory.selectedAttributes,
+                        attribute_values: currentCategory.selectedAttributeValues
+                    })).unwrap();
                 }
             }
             
@@ -160,7 +168,7 @@ export default function Categories() {
         }
     };
 
-    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, attributes: [] }) => {
+    const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, attributes: [], attribute_values: [] }) => {
         setCurrentCategory({ 
             ...category, 
             parent_id: category.parent_id || '',
@@ -168,7 +176,8 @@ export default function Categories() {
             category_for: category.category_for || 'blackhoof',
             image: null,
             imageUrl: category.image ? `http://localhost:8000/storage/${category.image}` : null,
-            selectedAttributes: category.attributes ? category.attributes.map(a => a.id) : []
+            selectedAttributes: category.attributes ? category.attributes.map(a => a.id) : [],
+            selectedAttributeValues: category.attribute_values ? category.attribute_values.map(v => v.id) : []
         });
         setIsFormOpen(true);
     };
@@ -180,6 +189,17 @@ export default function Categories() {
                 return { ...prev, selectedAttributes: selected.filter(id => id !== attributeId) };
             } else {
                 return { ...prev, selectedAttributes: [...selected, attributeId] };
+            }
+        });
+    };
+
+    const toggleAttributeValue = (valueId) => {
+        setCurrentCategory(prev => {
+            const selected = prev.selectedAttributeValues || [];
+            if (selected.includes(valueId)) {
+                return { ...prev, selectedAttributeValues: selected.filter(id => id !== valueId) };
+            } else {
+                return { ...prev, selectedAttributeValues: [...selected, valueId] };
             }
         });
     };
@@ -341,9 +361,19 @@ export default function Categories() {
                                             type="button" 
                                             onClick={() => {
                                                 const allIds = filteredAttributes.map(a => a.id);
+                                                const allValueIds = filteredAttributes.flatMap(a => a.values ? a.values.map(v => v.id) : []);
+                                                
                                                 const current = new Set(currentCategory.selectedAttributes || []);
+                                                const currentValues = new Set(currentCategory.selectedAttributeValues || []);
+                                                
                                                 allIds.forEach(id => current.add(id));
-                                                setCurrentCategory(prev => ({ ...prev, selectedAttributes: Array.from(current) }));
+                                                allValueIds.forEach(id => currentValues.add(id));
+                                                
+                                                setCurrentCategory(prev => ({ 
+                                                    ...prev, 
+                                                    selectedAttributes: Array.from(current),
+                                                    selectedAttributeValues: Array.from(currentValues)
+                                                }));
                                             }}
                                             className="text-xs text-brand-primary hover:underline font-medium"
                                         >
@@ -354,9 +384,12 @@ export default function Categories() {
                                             type="button" 
                                             onClick={() => {
                                                 const filteredIds = new Set(filteredAttributes.map(a => a.id));
+                                                const filteredValueIds = new Set(filteredAttributes.flatMap(a => a.values ? a.values.map(v => v.id) : []));
+                                                
                                                 setCurrentCategory(prev => ({ 
                                                     ...prev, 
-                                                    selectedAttributes: (prev.selectedAttributes || []).filter(id => !filteredIds.has(id))
+                                                    selectedAttributes: (prev.selectedAttributes || []).filter(id => !filteredIds.has(id)),
+                                                    selectedAttributeValues: (prev.selectedAttributeValues || []).filter(id => !filteredValueIds.has(id))
                                                 }));
                                             }}
                                             className="text-xs text-gray-500 hover:text-red-500 hover:underline font-medium"
@@ -365,21 +398,39 @@ export default function Categories() {
                                         </button>
                                     </div>
 
-                                    <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50 grid grid-cols-2 gap-2 content-start">
+                                    <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50 grid grid-cols-1 gap-2 content-start">
                                         {filteredAttributes.map(attr => (
-                                            <label key={attr.id} className={`flex items-center gap-2 py-1.5 px-2 rounded border cursor-pointer transition ${
+                                            <div key={attr.id} className={`flex flex-col p-2 rounded border transition ${
                                                 (currentCategory.selectedAttributes || []).includes(attr.id)
-                                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary font-medium'
-                                                : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                                                ? 'bg-brand-primary/5 border-brand-primary'
+                                                : 'bg-white border-gray-200 hover:border-brand-primary/50'
                                             }`}>
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={(currentCategory.selectedAttributes || []).includes(attr.id)}
-                                                    onChange={() => toggleAttribute(attr.id)}
-                                                    className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
-                                                />
-                                                <span className="text-sm truncate" title={attr.name}>{attr.name}</span>
-                                            </label>
+                                                <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-800">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={(currentCategory.selectedAttributes || []).includes(attr.id)}
+                                                        onChange={() => toggleAttribute(attr.id)}
+                                                        className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
+                                                    />
+                                                    <span className="text-sm truncate" title={attr.name}>{attr.name}</span>
+                                                </label>
+                                                
+                                                {(currentCategory.selectedAttributes || []).includes(attr.id) && attr.values && attr.values.length > 0 && (
+                                                    <div className="mt-2 ml-6 flex flex-col gap-1.5 border-l-2 border-brand-primary/20 pl-3">
+                                                        {attr.values.map(val => (
+                                                            <label key={val.id} className="flex items-center gap-2 cursor-pointer text-gray-600">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={(currentCategory.selectedAttributeValues || []).includes(val.id)}
+                                                                    onChange={() => toggleAttributeValue(val.id)}
+                                                                    className="w-3.5 h-3.5 text-brand-primary rounded focus:ring-brand-primary"
+                                                                />
+                                                                <span className="text-xs">{val.value}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                         {filteredAttributes.length === 0 && (
                                             <div className="col-span-2 py-4 text-center text-sm text-gray-400 italic">No attributes found matching '{attributeSearchQuery}'.</div>

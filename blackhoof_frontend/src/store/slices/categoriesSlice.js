@@ -56,9 +56,9 @@ export const deleteCategory = createAsyncThunk('categories/delete', async (id, {
     }
 });
 
-export const syncCategoryAttributes = createAsyncThunk('categories/syncAttributes', async ({ id, attributes }, { rejectWithValue }) => {
+export const syncCategoryAttributes = createAsyncThunk('categories/syncAttributes', async ({ id, attributes, attribute_values }, { rejectWithValue }) => {
     try {
-        const response = await api.post(`/categories/${id}/attributes`, { attributes });
+        const response = await api.post(`/categories/${id}/attributes`, { attributes, attribute_values });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || 'Failed to sync attributes');

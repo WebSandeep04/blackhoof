@@ -27,7 +27,7 @@ class CategoryController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Category::with('parent', 'attributes');
+        $query = Category::with('parent', 'attributes', 'attributeValues');
 
         if ($request->filled('search')) {
             $query->where('name', 'like', "%{$request->search}%");
@@ -38,7 +38,7 @@ class CategoryController extends Controller implements HasMiddleware
         }
 
         if ($request->query('all') === 'true') {
-            return response()->json(Category::with('attributes')->orderBy('name')->get());
+            return response()->json(Category::with('attributes', 'attributeValues')->orderBy('name')->get());
         }
 
         $categories = $query->paginate(10);
@@ -73,7 +73,7 @@ class CategoryController extends Controller implements HasMiddleware
             'category_for' => $request->category_for,
         ]);
 
-        return response()->json($category->load('parent', 'attributes'), 201);
+        return response()->json($category->load('parent', 'attributes', 'attributeValues'), 201);
     }
 
     /**
@@ -81,7 +81,7 @@ class CategoryController extends Controller implements HasMiddleware
      */
     public function show(string $id)
     {
-        $category = Category::with('parent', 'attributes')->findOrFail($id);
+        $category = Category::with('parent', 'attributes', 'attributeValues')->findOrFail($id);
         return response()->json($category);
     }
 
@@ -123,7 +123,7 @@ class CategoryController extends Controller implements HasMiddleware
 
         $category->update($data);
 
-        return response()->json($category->load('parent', 'attributes'));
+        return response()->json($category->load('parent', 'attributes', 'attributeValues'));
     }
 
     /**
@@ -149,6 +149,8 @@ class CategoryController extends Controller implements HasMiddleware
         $request->validate([
             'attributes' => 'nullable|array',
             'attributes.*' => 'required|integer|exists:attributes,id',
+            'attribute_values' => 'nullable|array',
+            'attribute_values.*' => 'required|integer|exists:attribute_values,id',
         ]);
 
         $category = Category::findOrFail($id);
@@ -159,8 +161,15 @@ class CategoryController extends Controller implements HasMiddleware
             })
             ->toArray();
 
-        $category->attributes()->sync($attributes);
+        $attributeValues = collect($request->input('attribute_values', []))
+            ->filter(function ($value) {
+                return !empty($value);
+            })
+            ->toArray();
 
-        return response()->json($category->load('parent', 'attributes'));
+        $category->attributes()->sync($attributes);
+        $category->attributeValues()->sync($attributeValues);
+
+        return response()->json($category->load('parent', 'attributes', 'attributeValues'));
     }
 }

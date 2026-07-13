@@ -36,4 +36,9 @@ class Category extends Model
     {
         return $this->belongsToMany(Attribute::class, 'category_attribute');
     }
+
+    public function attributeValues()
+    {
+        return $this->belongsToMany(AttributeValue::class, 'category_attribute_value');
+    }
 }
