@@ -79,12 +79,15 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                             </div>
                             <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-brand">
                                 {cartItems.map((item) => {
-                                    const mainImage = item.images?.find(img => img.is_main) || item.images?.[0];
+                                    const allImages = [...(item.images || []), ...(item.variants?.flatMap(v => v.images || []) || [])];
+                                    const mainImage = allImages.find(img => img.is_main) || allImages[0];
+                                    const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
+                                    
                                     return (
-                                        <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden shrink-0">
-                                                {mainImage ? (
-                                                    <img src={mainImage.url} alt={item.name} className="w-full h-full object-cover" />
+                                        <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:border-brand-primary/30 transition shadow-sm group">
+                                            <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-gray-100 relative">
+                                                {imageUrl ? (
+                                                    <img src={imageUrl} alt={item.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">No Img</div>
                                                 )}

@@ -250,15 +250,17 @@ export default function CataloguePreview() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {products.map((product) => {
-                                const mainImage = product.images?.find(img => img.is_main) || product.images?.[0];
+                                const allImages = [...(product.images || []), ...(product.variants?.flatMap(v => v.images || []) || [])];
+                                const mainImage = allImages.find(img => img.is_main) || allImages[0];
                                 const defaultPrice = product.variants?.[0]?.price || 'N/A';
+                                const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
 
                                 return (
                                     <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col h-full">
                                         <div className="relative aspect-square overflow-hidden bg-gray-100 shrink-0">
-                                            {mainImage ? (
+                                            {imageUrl ? (
                                                 <img 
-                                                    src={mainImage.url} 
+                                                    src={imageUrl} 
                                                     alt={product.name} 
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />

@@ -265,8 +265,9 @@ export default function AdminCatalogue() {
                         <div className="p-6 overflow-y-auto scrollbar-brand">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {selectedCatalogue.products?.map(product => {
-                                    const mainImage = product.images?.find(i => i.is_main) || product.images?.[0];
-                                    const imageUrl = mainImage ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null;
+                                    const allImages = [...(product.images || []), ...(product.variants?.flatMap(v => v.images || []) || [])];
+                                    const mainImage = allImages.find(img => img.is_main) || allImages[0];
+                                    const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
                                     
                                     return (
                                         <div key={product.id} className="flex gap-4 p-3 rounded-xl border border-gray-100 bg-white hover:border-brand-primary/30 transition shadow-sm">

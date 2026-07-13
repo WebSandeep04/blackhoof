@@ -167,9 +167,11 @@ export default function Products() {
                         header: 'Image', 
                         key: 'image',
                         render: (product) => {
-                            const mainImage = product.images?.find(img => img.is_main) || product.images?.[0];
-                            return mainImage ? (
-                                <img src={mainImage.url} alt={product.name} className="w-12 h-12 rounded object-cover border border-gray-200" />
+                            const allImages = [...(product.images || []), ...(product.variants?.flatMap(v => v.images || []) || [])];
+                            const mainImage = allImages.find(img => img.is_main) || allImages[0];
+                            const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
+                            return imageUrl ? (
+                                <img src={imageUrl} alt={product.name} className="w-12 h-12 rounded object-cover border border-gray-200" />
                             ) : (
                                 <div className="w-12 h-12 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400">
                                     <ImageIcon className="w-6 h-6" />
