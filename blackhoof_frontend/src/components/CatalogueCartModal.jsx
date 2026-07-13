@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCartAsync, clearCartAsync } from '../store/slices/catalogueCartSlice';
+import { fetchCustomers } from '../store/slices/customersSlice';
 import { X, FileText, Trash2, Download } from 'lucide-react';
 import api from '../api/axios';
 
@@ -8,6 +9,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
     const { cartName, editingCatalogueId, cartShowPrice } = useSelector(state => state.catalogueCart);
+    const { allCustomers } = useSelector(state => state.customers);
     const [catalogueName, setCatalogueName] = useState('');
     const [showPrice, setShowPrice] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -15,6 +17,9 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
 
     
     useEffect(() => {
+        if (isOpen) {
+            dispatch(fetchCustomers({ all: true }));
+        }
         if (isOpen && cartName) {
             setCatalogueName(cartName);
             setShowPrice(cartShowPrice !== undefined ? cartShowPrice : true);
@@ -24,7 +29,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
             setShowPrice(true);
             setSaveAsNew(false);
         }
-    }, [isOpen, cartName, cartShowPrice]);
+    }, [isOpen, cartName, cartShowPrice, dispatch]);
 
     if (!isOpen) return null;
 
@@ -134,18 +139,23 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                 {(!editingCatalogueId || saveAsNew) && (
                                     <div className="mb-4">
                                         <label htmlFor="catalogueName" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Catalogue Name <span className="text-red-500">*</span>
+                                            Select Customer <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            type="text"
+                                        <select
                                             id="catalogueName"
                                             required
                                             value={catalogueName}
                                             onChange={(e) => setCatalogueName(e.target.value)}
-                                            placeholder="e.g. Summer Collection 2026"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-2">This name will appear on the cover of the generated PDF.</p>
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition bg-white"
+                                        >
+                                            <option value="">Select a customer</option>
+                                            {allCustomers?.map(customer => (
+                                                <option key={customer.id} value={customer.name}>
+                                                    {customer.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-2">The selected customer's name will appear on the cover of the generated PDF.</p>
                                     </div>
                                 )}
 
