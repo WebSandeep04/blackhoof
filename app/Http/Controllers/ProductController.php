@@ -53,6 +53,9 @@ class ProductController extends Controller implements HasMiddleware
         if ($request->filled('include_in_catalogue')) {
             $query->where('include_in_catalogue', filter_var($request->include_in_catalogue, FILTER_VALIDATE_BOOLEAN));
         }
+        if ($request->filled('show_on_website')) {
+            $query->where('show_on_website', filter_var($request->show_on_website, FILTER_VALIDATE_BOOLEAN));
+        }
         if ($request->filled('product_for')) {
             $query->where('product_for', $request->product_for);
         }
@@ -81,6 +84,7 @@ class ProductController extends Controller implements HasMiddleware
             'is_trending' => 'boolean',
             'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
+            'show_on_website' => 'boolean',
             'has_variants' => 'required|boolean', // Frontend should send this
             'variants' => 'required|string', // JSON string of variants array
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -101,6 +105,7 @@ class ProductController extends Controller implements HasMiddleware
                 'is_trending' => $request->is_trending ?? false,
                 'is_top_seller' => $request->is_top_seller ?? false,
                 'include_in_catalogue' => $request->include_in_catalogue ?? true,
+                'show_on_website' => $request->show_on_website ?? true,
                 'product_for' => $request->product_for,
             ]);
 
@@ -202,6 +207,7 @@ class ProductController extends Controller implements HasMiddleware
             'is_trending' => 'boolean',
             'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
+            'show_on_website' => 'boolean',
             'has_variants' => 'required|boolean',
             'variants' => 'required|string', // JSON string
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -223,6 +229,7 @@ class ProductController extends Controller implements HasMiddleware
                 'is_trending' => $request->has('is_trending') ? $request->is_trending : $product->is_trending,
                 'is_top_seller' => $request->has('is_top_seller') ? $request->is_top_seller : $product->is_top_seller,
                 'include_in_catalogue' => $request->has('include_in_catalogue') ? $request->include_in_catalogue : $product->include_in_catalogue,
+                'show_on_website' => $request->has('show_on_website') ? $request->show_on_website : $product->show_on_website,
                 'product_for' => $request->product_for,
             ]);
 
