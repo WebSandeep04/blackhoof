@@ -24,16 +24,20 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     /**
      * Get a list of all completed catalogues.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Admin gets all completed catalogues, with product count
-        $catalogues = SavedCatalogue::withCount('products')
-            ->where('status', 'completed')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $query = SavedCatalogue::withCount('products')
+            ->where('status', 'completed');
             
-        // We might also want to load the products themselves for viewing in the modal
-        $catalogues->load(['products.images', 'products.category']);
+        if ($request->filled('country_id')) {
+            $query->whereHas('customer', function($q) use ($request) {
+                $q->where('country_id', $request->country_id);
+            });
+        }
+        
+        $catalogues = $query->orderBy('created_at', 'desc')->paginate(10);
+            
+        $catalogues->load(['products.images', 'products.category', 'customer.country']);
 
         return response()->json($catalogues);
     }
@@ -122,6 +126,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'customer_id' => 'required|exists:customers,id',
             'show_price' => 'boolean',
         ]);
 
@@ -137,6 +142,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             
             $original->update([
                 'name' => $request->name,
+                'customer_id' => $request->customer_id,
                 'show_price' => $request->boolean('show_price', true)
             ]);
             
@@ -163,6 +169,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
 
         $catalogue->update([
             'name' => $request->name,
+            'customer_id' => $request->customer_id,
             'status' => 'completed',
             'editing_catalogue_id' => null,
             'show_price' => $request->boolean('show_price', true)

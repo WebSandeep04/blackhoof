@@ -3,10 +3,10 @@ import api from '../../api/axios';
 
 export const fetchSavedCatalogues = createAsyncThunk(
     'savedCatalogues/fetchAll',
-    async ({ page = 1, search = '' } = {}, { rejectWithValue }) => {
+    async ({ page = 1, search = '', country_id = '' } = {}, { rejectWithValue }) => {
         try {
             // Need to pass page to api
-            const response = await api.get(`/saved-catalogues?page=${page}&search=${search}`);
+            const response = await api.get(`/saved-catalogues?page=${page}&search=${search}&country_id=${country_id}`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to fetch saved catalogues');

@@ -14,7 +14,8 @@ class SavedCatalogue extends Model
         'name',
         'status',
         'editing_catalogue_id',
-        'show_price'
+        'show_price',
+        'customer_id',
     ];
 
     public function user()
@@ -30,6 +31,11 @@ class SavedCatalogue extends Model
     public function versions()
     {
         return $this->hasMany(CatalogueVersion::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function latestVersion()

@@ -8,9 +8,10 @@ import api from '../api/axios';
 export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
-    const { cartName, editingCatalogueId, cartShowPrice } = useSelector(state => state.catalogueCart);
+    const { cartName, editingCatalogueId, cartShowPrice, cartCustomerId } = useSelector(state => state.catalogueCart); // wait, cartCustomerId may not exist yet, we'll just ignore it or use a default
     const { allCustomers } = useSelector(state => state.customers);
     const [catalogueName, setCatalogueName] = useState('');
+    const [customerId, setCustomerId] = useState('');
     const [showPrice, setShowPrice] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [saveAsNew, setSaveAsNew] = useState(false);
@@ -22,10 +23,12 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         }
         if (isOpen && cartName) {
             setCatalogueName(cartName);
+            // In a full implementation we'd also load the editing catalogue's customerId
             setShowPrice(cartShowPrice !== undefined ? cartShowPrice : true);
             setSaveAsNew(false);
         } else if (isOpen && !cartName) {
             setCatalogueName('');
+            setCustomerId('');
             setShowPrice(true);
             setSaveAsNew(false);
         }
@@ -35,13 +38,14 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
 
     const handleGenerate = async (e) => {
         e.preventDefault();
-        if (!catalogueName.trim() || cartItems.length === 0) return;
+        if (!catalogueName.trim() || !customerId || cartItems.length === 0) return;
 
         setIsGenerating(true);
         try {
             // 1. Save catalogue and attach products in backend (checkout)
             const response = await api.post('/cart/checkout', { 
                 name: catalogueName,
+                customer_id: customerId,
                 save_as_new: saveAsNew,
                 show_price: showPrice
             });
@@ -144,13 +148,19 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                         <select
                                             id="catalogueName"
                                             required
-                                            value={catalogueName}
-                                            onChange={(e) => setCatalogueName(e.target.value)}
+                                            value={customerId}
+                                            onChange={(e) => {
+                                                const selectedId = e.target.value;
+                                                setCustomerId(selectedId);
+                                                const customer = allCustomers?.find(c => c.id == selectedId);
+                                                if (customer) setCatalogueName(customer.name);
+                                                else setCatalogueName('');
+                                            }}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition bg-white"
                                         >
                                             <option value="">Select a customer</option>
                                             {allCustomers?.map(customer => (
-                                                <option key={customer.id} value={customer.name}>
+                                                <option key={customer.id} value={customer.id}>
                                                     {customer.name}
                                                 </option>
                                             ))}

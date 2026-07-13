@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSavedCatalogues, deleteSavedCatalogue, fetchCatalogueVersions } from '../store/slices/savedCataloguesSlice';
+import { fetchCountries } from '../store/slices/countriesSlice';
+import { clearCartAsync } from '../store/slices/catalogueCartSlice';
 import api from '../api/axios';
-import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2, History } from 'lucide-react';
+import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2, History, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import Swal from 'sweetalert2';
@@ -12,6 +14,7 @@ export default function AdminCatalogue() {
     const navigate = useNavigate();
     const { catalogues, pagination, loading: cataloguesLoading } = useSelector((state) => state.savedCatalogues);
     const { user: authUser } = useSelector(state => state.auth);
+    const { allCountries } = useSelector(state => state.countries);
     const loading = cataloguesLoading;
     
     const hasPermission = (permission) => authUser?.permissions?.includes(permission);
@@ -31,14 +34,19 @@ export default function AdminCatalogue() {
     const [isSearching, setIsSearching] = useState(false);
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState('');
     const [page, setPage] = useState(1);
 
     useEffect(() => {
+        dispatch(fetchCountries({ all: true }));
+    }, [dispatch]);
+
+    useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            dispatch(fetchSavedCatalogues({ page, search: searchQuery }));
+            dispatch(fetchSavedCatalogues({ page, search: searchQuery, country_id: selectedCountry }));
         }, 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, page, dispatch]);
+    }, [searchQuery, selectedCountry, page, dispatch]);
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -111,6 +119,16 @@ export default function AdminCatalogue() {
         }
     };
 
+    const handleCreateNew = async () => {
+        try {
+            await dispatch(clearCartAsync()).unwrap();
+            navigate('/admin/catalogue/preview');
+        } catch (error) {
+            console.error('Failed to clear cart:', error);
+            navigate('/admin/catalogue/preview');
+        }
+    };
+
     useEffect(() => {
         if (productSearch.length > 2) {
             setIsSearching(true);
@@ -135,40 +153,62 @@ export default function AdminCatalogue() {
     return (
         <div className="space-y-6">
             <div className="flex justify-end items-center gap-4">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+                <div className="flex gap-4 items-center">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Filter className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <select
+                            value={selectedCountry}
+                            onChange={(e) => {
+                                setSelectedCountry(e.target.value);
+                                setPage(1);
+                            }}
+                            className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-48 bg-white shadow-sm appearance-none"
+                        >
+                            <option value="">All Countries</option>
+                            {allCountries?.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
                     </div>
-                    <input 
-                        type="text"
-                        placeholder="Search catalogues..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
-                    />
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input 
+                            type="text"
+                            placeholder="Search catalogues..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm w-64 bg-white shadow-sm"
+                        />
+                    </div>
                 </div>
                 {hasPermission('create saved catalogues') && (
-                    <Link 
-                        to="/admin/catalogue/preview"
+                    <button 
+                        onClick={handleCreateNew}
                         className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
                         title="Add Catalogue"
                     >
                         <Plus className="w-5 h-5" />
-                    </Link>
+                    </button>
                 )}
             </div>
 
             <DataTable 
                 columns={[
                     { 
-                        header: 'Catalogue Name', 
+                        header: 'Customer Name', 
                         key: 'name',
                         render: (catalogue) => (
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded bg-brand-light text-brand-primary flex items-center justify-center shrink-0">
                                     <FileText className="w-5 h-5" />
                                 </div>
-                                <span className="font-medium text-gray-800">{catalogue.name || 'Untitled Catalogue'}</span>
+                                <span className="font-medium text-gray-800">
+                                    {catalogue.customer?.name || catalogue.name || 'Untitled Catalogue'}
+                                </span>
                             </div>
                         )
                     },
@@ -180,6 +220,11 @@ export default function AdminCatalogue() {
                                 {catalogue.products_count} Items
                             </span>
                         )
+                    },
+                    {
+                        header: 'Country',
+                        key: 'country',
+                        render: (catalogue) => catalogue.customer?.country?.name || 'N/A'
                     },
                     { 
                         header: 'Created Date', 
