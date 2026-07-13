@@ -63,6 +63,7 @@ class PermissionSeeder extends Seeder
             'create testimonials',
             'edit testimonials',
             'delete testimonials',
+            'view login logs',
         ];
 
         foreach ($permissions as $permission) {

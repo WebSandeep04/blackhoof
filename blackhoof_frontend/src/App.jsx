@@ -19,6 +19,7 @@ import Testimonials from './pages/Testimonials';
 import TestimonialForm from './pages/TestimonialForm';
 import Inqueries from './pages/Inqueries';
 import InquiryStatus from './pages/InquiryStatus';
+import LoginLogs from './pages/LoginLogs';
 
 import CataloguePreview from './pages/CataloguePreview';
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="testimonials/edit/:id" element={<TestimonialForm />} />
             <Route path="inqueries" element={<Inqueries />} />
             <Route path="inquiry-statuses" element={<InquiryStatus />} />
+            <Route path="login-logs" element={<LoginLogs />} />
           </Route>
 
           {/* Default Route */}

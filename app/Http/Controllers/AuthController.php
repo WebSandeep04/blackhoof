@@ -29,6 +29,11 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        \App\Models\LoginLog::create([
+            'user_id' => $user->id,
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',

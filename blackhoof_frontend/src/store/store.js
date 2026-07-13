@@ -12,6 +12,7 @@ import blogCategoriesReducer from './slices/blogCategoriesSlice';
 import blogsReducer from './slices/blogsSlice';
 import testimonialsReducer from './slices/testimonialsSlice';
 import inquiryStatusReducer from './slices/inquiryStatusSlice';
+import loginLogsReducer from './slices/loginLogsSlice';
 
 export const store = configureStore({
     reducer: {
@@ -28,5 +29,6 @@ export const store = configureStore({
         blogs: blogsReducer,
         testimonials: testimonialsReducer,
         inquiryStatuses: inquiryStatusReducer,
+        loginLogs: loginLogsReducer,
     },
 });

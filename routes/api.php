@@ -63,4 +63,5 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(\Spatie\Permission\Models\Permission::all());
     });
     Route::apiResource('inquiry_statuses', \App\Http\Controllers\InquiryStatusController::class);
+    Route::get('login-logs', [\App\Http\Controllers\LoginLogController::class, 'index']);
 });
