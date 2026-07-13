@@ -179,7 +179,36 @@ export default function Products() {
                             );
                         }
                     },
-                    { header: 'Product Name', key: 'name', cellClassName: 'font-medium text-black' },
+                    { 
+                        header: 'Product Name', 
+                        key: 'name', 
+                        cellClassName: 'font-medium text-black',
+                        render: (product) => {
+                            const displayName = product.name?.length > 20 ? product.name.substring(0, 20) + '...' : product.name;
+                            return (
+                                <span 
+                                    className={product.name?.length > 20 ? "cursor-pointer hover:text-brand-primary" : ""} 
+                                    onClick={() => {
+                                        if (product.name?.length > 20) {
+                                            Swal.fire({
+                                                title: '<span class="text-lg font-semibold text-gray-800">Complete Product Name</span>',
+                                                html: `<p class="text-gray-600 text-base leading-relaxed mt-2 text-left">${product.name}</p>`,
+                                                showConfirmButton: false,
+                                                showCloseButton: true,
+                                                customClass: {
+                                                    popup: 'rounded-xl shadow-2xl border border-gray-100',
+                                                    closeButton: 'focus:outline-none hover:text-red-500 transition-colors'
+                                                },
+                                                width: '450px'
+                                            });
+                                        }
+                                    }}
+                                >
+                                    {displayName}
+                                </span>
+                            );
+                        }
+                    },
                     { 
                         header: 'Category', 
                         key: 'category', 
