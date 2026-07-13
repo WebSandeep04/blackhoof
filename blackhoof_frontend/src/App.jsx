@@ -17,6 +17,8 @@ import Blogs from './pages/Blogs';
 import BlogForm from './pages/BlogForm';
 import Testimonials from './pages/Testimonials';
 import TestimonialForm from './pages/TestimonialForm';
+import Countries from './pages/Countries';
+import Customers from './pages/Customers';
 import Inqueries from './pages/Inqueries';
 import InquiryStatus from './pages/InquiryStatus';
 import LoginLogs from './pages/LoginLogs';
@@ -41,6 +43,8 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="roles" element={<Roles />} />
+            <Route path="countries" element={<Countries />} />
+            <Route path="customers" element={<Customers />} />
             <Route path="categories" element={<Categories />} />
             <Route path="attributes" element={<Attributes />} />
             <Route path="products" element={<Products />} />

@@ -64,6 +64,14 @@ class PermissionSeeder extends Seeder
             'edit testimonials',
             'delete testimonials',
             'view login logs',
+            'view countries',
+            'create countries',
+            'edit countries',
+            'delete countries',
+            'view customers',
+            'create customers',
+            'edit customers',
+            'delete customers',
         ];
 
         foreach ($permissions as $permission) {

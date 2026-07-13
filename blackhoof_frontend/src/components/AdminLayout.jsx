@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../store/slices/authSlice';
-import { Users, Shield, LogOut, Menu, Settings, ChevronRight, ChevronLeft, Package, ListTree, Tags, BookOpen, FileText, LayoutDashboard, MessageSquare } from 'lucide-react';
+import { Users, Shield, LogOut, Menu, Settings, ChevronRight, ChevronLeft, Package, ListTree, Tags, BookOpen, FileText, LayoutDashboard, MessageSquare, Globe, Contact } from 'lucide-react';
 
 export default function AdminLayout() {
     const dispatch = useDispatch();
@@ -47,6 +47,8 @@ export default function AdminLayout() {
     const setupNavigation = [
         { name: 'Users', href: '/admin/users', icon: Users, permission: 'view users' },
         { name: 'Roles', href: '/admin/roles', icon: Shield, permission: 'view roles' },
+        { name: 'Countries', href: '/admin/countries', icon: Globe, permission: 'view countries' },
+        { name: 'Customers', href: '/admin/customers', icon: Contact, permission: 'view customers' },
         { name: 'Categories', href: '/admin/categories', icon: ListTree, permission: 'view categories' },
         { name: 'Attributes', href: '/admin/attributes', icon: Tags, permission: 'view attributes' },
         { name: 'Blog Category', href: '/admin/blog-categories', icon: FileText, permission: 'view blog categories' },
