@@ -42,7 +42,8 @@ export default function BlogForm() {
             setCategoryId(blog.blog_category_id);
             setStatus(blog.status);
             if (blog.featured_image) {
-                setImagePreview(`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}/${blog.featured_image}`);
+                const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace('/api', '');
+                setImagePreview(`${baseUrl}/${blog.featured_image}`);
             }
             setIsLoading(false);
         } catch (error) {

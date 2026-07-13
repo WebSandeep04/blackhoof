@@ -98,11 +98,12 @@ export default function Blogs() {
                     { 
                         header: 'Image', 
                         key: 'image',
-                        render: (blog) => (
-                            blog.featured_image ? 
-                            <img src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}/${blog.featured_image}`} alt={blog.title} className="w-12 h-12 object-cover rounded shadow-sm" /> :
+                        render: (blog) => {
+                            const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').replace('/api', '');
+                            return blog.featured_image ? 
+                            <img src={`${baseUrl}/${blog.featured_image}`} alt={blog.title} className="w-12 h-12 object-cover rounded shadow-sm" /> :
                             <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 shadow-sm"><ImageIcon className="w-5 h-5" /></div>
-                        )
+                        }
                     },
                     { 
                         header: 'Title', 
