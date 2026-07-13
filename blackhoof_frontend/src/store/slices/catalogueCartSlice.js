@@ -9,6 +9,7 @@ export const fetchCartAsync = createAsyncThunk(
             return {
                 items: response.data.cart.products || [],
                 cartName: response.data.cart.name,
+                cartShowPrice: response.data.cart.show_price !== undefined ? response.data.cart.show_price : true,
                 editingCatalogueId: response.data.cart.editing_catalogue_id
             };
         } catch (error) {
@@ -56,6 +57,7 @@ export const clearCartAsync = createAsyncThunk(
 const initialState = {
     cartItems: [],
     cartName: null,
+    cartShowPrice: true,
     editingCatalogueId: null,
     loading: false,
     error: null,
@@ -76,6 +78,7 @@ const catalogueCartSlice = createSlice({
                 state.loading = false;
                 state.cartItems = action.payload.items;
                 state.cartName = action.payload.cartName;
+                state.cartShowPrice = action.payload.cartShowPrice;
                 state.editingCatalogueId = action.payload.editingCatalogueId;
             })
             .addCase(fetchCartAsync.rejected, (state, action) => {
@@ -98,6 +101,7 @@ const catalogueCartSlice = createSlice({
             .addCase(clearCartAsync.fulfilled, (state) => {
                 state.cartItems = [];
                 state.cartName = null;
+                state.cartShowPrice = true;
                 state.editingCatalogueId = null;
             });
     }

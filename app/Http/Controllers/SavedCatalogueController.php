@@ -122,6 +122,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'show_price' => 'boolean',
         ]);
 
         $catalogue = $this->getDraftCatalogue();
@@ -134,13 +135,19 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             // We are editing an existing catalogue
             $original = SavedCatalogue::findOrFail($catalogue->editing_catalogue_id);
             
+            $original->update([
+                'name' => $request->name,
+                'show_price' => $request->boolean('show_price', true)
+            ]);
+            
             // Sync products
             $original->products()->sync($catalogue->products->pluck('id'));
 
             // Create new version
             $latestVersionNumber = $original->latestVersion ? $original->latestVersion->version_number : 0;
             $version = $original->versions()->create([
-                'version_number' => $latestVersionNumber + 1
+                'version_number' => $latestVersionNumber + 1,
+                'show_price' => $request->boolean('show_price', true)
             ]);
             $version->products()->sync($catalogue->products->pluck('id'));
 
@@ -157,11 +164,15 @@ class SavedCatalogueController extends Controller implements HasMiddleware
         $catalogue->update([
             'name' => $request->name,
             'status' => 'completed',
-            'editing_catalogue_id' => null
+            'editing_catalogue_id' => null,
+            'show_price' => $request->boolean('show_price', true)
         ]);
 
         // Create initial version
-        $version = $catalogue->versions()->create(['version_number' => 1]);
+        $version = $catalogue->versions()->create([
+            'version_number' => 1,
+            'show_price' => $request->boolean('show_price', true)
+        ]);
         $version->products()->sync($catalogue->products->pluck('id'));
 
         return response()->json([
@@ -182,7 +193,8 @@ class SavedCatalogueController extends Controller implements HasMiddleware
         $draft->products()->sync($original->products->pluck('id'));
         $draft->update([
             'editing_catalogue_id' => $original->id,
-            'name' => $original->name
+            'name' => $original->name,
+            'show_price' => $original->show_price
         ]);
 
         return response()->json(['message' => 'Loaded into cart', 'cart' => $draft]);
@@ -210,6 +222,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             if ($version->saved_catalogue_id == $catalogue->id) {
                 $catalogue->setRelation('products', $version->products);
                 $catalogue->name = $catalogue->name . ' (v' . $version->version_number . ')';
+                $catalogue->show_price = $version->show_price;
             }
         }
 

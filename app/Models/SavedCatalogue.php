@@ -14,6 +14,7 @@ class SavedCatalogue extends Model
         'name',
         'status',
         'editing_catalogue_id',
+        'show_price'
     ];
 
     public function user()

@@ -12,6 +12,7 @@ class CatalogueVersion extends Model
     protected $fillable = [
         'saved_catalogue_id',
         'version_number',
+        'show_price',
     ];
 
     public function savedCatalogue()

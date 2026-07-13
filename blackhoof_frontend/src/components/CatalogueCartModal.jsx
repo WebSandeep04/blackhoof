@@ -7,8 +7,9 @@ import api from '../api/axios';
 export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
-    const { cartName, editingCatalogueId } = useSelector(state => state.catalogueCart);
+    const { cartName, editingCatalogueId, cartShowPrice } = useSelector(state => state.catalogueCart);
     const [catalogueName, setCatalogueName] = useState('');
+    const [showPrice, setShowPrice] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [saveAsNew, setSaveAsNew] = useState(false);
 
@@ -16,12 +17,14 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
     useEffect(() => {
         if (isOpen && cartName) {
             setCatalogueName(cartName);
+            setShowPrice(cartShowPrice !== undefined ? cartShowPrice : true);
             setSaveAsNew(false);
         } else if (isOpen && !cartName) {
             setCatalogueName('');
+            setShowPrice(true);
             setSaveAsNew(false);
         }
-    }, [isOpen, cartName]);
+    }, [isOpen, cartName, cartShowPrice]);
 
     if (!isOpen) return null;
 
@@ -34,7 +37,8 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
             // 1. Save catalogue and attach products in backend (checkout)
             const response = await api.post('/cart/checkout', { 
                 name: catalogueName,
-                save_as_new: saveAsNew
+                save_as_new: saveAsNew,
+                show_price: showPrice
             });
             
             const catalogueId = response.data.catalogue_id;
@@ -144,6 +148,19 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                         <p className="text-xs text-gray-500 mt-2">This name will appear on the cover of the generated PDF.</p>
                                     </div>
                                 )}
+
+                                <div className="mb-6 flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <input
+                                        type="checkbox"
+                                        id="showPrice"
+                                        checked={showPrice}
+                                        onChange={(e) => setShowPrice(e.target.checked)}
+                                        className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                                    />
+                                    <label htmlFor="showPrice" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                        Show product prices in catalogue
+                                    </label>
+                                </div>
 
                                 <button
                                     type="submit"

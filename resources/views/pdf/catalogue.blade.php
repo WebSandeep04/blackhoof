@@ -61,7 +61,9 @@
                             <thead>
                                 <tr>
                                     <th>SKU</th>
-                                    <th>Price</th>
+                                    @if($catalogue->show_price ?? true)
+                                        <th>Price</th>
+                                    @endif
                                     <th>Attributes</th>
                                 </tr>
                             </thead>
@@ -69,7 +71,9 @@
                                 @foreach($product->variants as $variant)
                                     <tr>
                                         <td>{{ $variant->sku }}</td>
-                                        <td class="price">${{ number_format($variant->price, 2) }}</td>
+                                        @if($catalogue->show_price ?? true)
+                                            <td class="price">${{ number_format($variant->price, 2) }}</td>
+                                        @endif
                                         <td>
                                             @foreach($variant->attributeValues as $attrVal)
                                                 <strong>{{ $attrVal->attribute->name }}:</strong> {{ $attrVal->value }}<br>
