@@ -33,7 +33,7 @@
     @foreach($catalogue->products as $product)
         <div class="product">
             <div class="product-header">
-                <h2 class="product-title">{{ $product->name }}</h2>
+                <h2 class="product-title">{{ $product->pivot->product_name_at_time_of_save ?? $product->name }}</h2>
                 @if($product->category)
                     <span class="product-category">{{ $product->category->name }}</span>
                 @endif
@@ -56,7 +56,15 @@
                         {{ $product->short_description }}
                     </div>
 
-                    @if($product->variants->count() > 0)
+                    @php
+                        $specificVariantId = $product->pivot->product_variant_id ?? null;
+                        $variantsToDisplay = $specificVariantId 
+                            ? $product->variants->where('id', $specificVariantId) 
+                            : $product->variants;
+                        $snapshotPrice = $product->pivot->price_at_time_of_save ?? null;
+                    @endphp
+
+                    @if($variantsToDisplay->count() > 0)
                         <table class="variants-table">
                             <thead>
                                 <tr>
@@ -68,11 +76,11 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($product->variants as $variant)
+                                @foreach($variantsToDisplay as $variant)
                                     <tr>
                                         <td>{{ $variant->sku }}</td>
                                         @if($catalogue->show_price ?? true)
-                                            <td class="price">${{ number_format($variant->price, 2) }}</td>
+                                            <td class="price">${{ number_format($snapshotPrice ?? $variant->price, 2) }}</td>
                                         @endif
                                         <td>
                                             @foreach($variant->attributeValues as $attrVal)

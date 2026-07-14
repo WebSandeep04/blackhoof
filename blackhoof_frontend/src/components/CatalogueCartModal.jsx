@@ -23,7 +23,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         }
         if (isOpen && cartName) {
             setCatalogueName(cartName);
-            // In a full implementation we'd also load the editing catalogue's customerId
+            if (cartCustomerId) setCustomerId(cartCustomerId);
             setShowPrice(cartShowPrice !== undefined ? cartShowPrice : true);
             setSaveAsNew(false);
         } else if (isOpen && !cartName) {
@@ -32,13 +32,14 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
             setShowPrice(true);
             setSaveAsNew(false);
         }
-    }, [isOpen, cartName, cartShowPrice, dispatch]);
+    }, [isOpen, cartName, cartShowPrice, cartCustomerId, dispatch]);
 
     if (!isOpen) return null;
 
     const handleGenerate = async (e) => {
         e.preventDefault();
-        if (!catalogueName.trim() || !customerId || cartItems.length === 0) return;
+        if (!catalogueName.trim() || cartItems.length === 0) return;
+        if ((!editingCatalogueId || saveAsNew) && !customerId) return;
 
         setIsGenerating(true);
         try {
@@ -97,7 +98,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                     const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
                                     
                                     return (
-                                        <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:border-brand-primary/30 transition shadow-sm group">
+                                        <div key={`${item.id}-${item.cart_variant_id || 'all'}`} className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:border-brand-primary/30 transition shadow-sm group">
                                             <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-gray-100 relative">
                                                 {imageUrl ? (
                                                     <img src={imageUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -105,13 +106,19 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                                     <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">No Img</div>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                 <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
-                                                <p className="text-xs text-gray-500">{item.variants?.length || 0} Options</p>
+                                                {item.cart_variant_id ? (
+                                                    <p className="text-xs text-brand-primary font-medium mt-1">
+                                                        Variant: {item.variants?.find(v => v.id === item.cart_variant_id)?.sku || 'Unknown'}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500 mt-1">{item.variants?.length || 0} Options (Base Product)</p>
+                                                )}
                                             </div>
                                             <button 
-                                                onClick={() => dispatch(removeFromCartAsync(item.id))}
-                                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
+                                                onClick={() => dispatch(removeFromCartAsync({ productId: item.id, variantId: item.cart_variant_id }))}
+                                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition self-center"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>

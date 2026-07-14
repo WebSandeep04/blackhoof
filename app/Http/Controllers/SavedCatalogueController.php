@@ -85,11 +85,21 @@ class SavedCatalogueController extends Controller implements HasMiddleware
      */
     public function addToCart(Request $request)
     {
-        $request->validate(['product_id' => 'required|exists:products,id']);
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'product_variant_id' => 'nullable|exists:product_variants,id'
+        ]);
         $catalogue = $this->getDraftCatalogue();
         
-        if (!$catalogue->products()->where('product_id', $request->product_id)->exists()) {
-            $catalogue->products()->attach($request->product_id);
+        $exists = $catalogue->products()
+            ->where('product_id', $request->product_id)
+            ->wherePivot('product_variant_id', $request->product_variant_id)
+            ->exists();
+
+        if (!$exists) {
+            $catalogue->products()->attach($request->product_id, [
+                'product_variant_id' => $request->product_variant_id
+            ]);
         }
 
         return response()->json(['message' => 'Added to cart']);
@@ -100,10 +110,17 @@ class SavedCatalogueController extends Controller implements HasMiddleware
      */
     public function removeFromCart(Request $request)
     {
-        $request->validate(['product_id' => 'required|exists:products,id']);
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'product_variant_id' => 'nullable|exists:product_variants,id'
+        ]);
         $catalogue = $this->getDraftCatalogue();
         
-        $catalogue->products()->detach($request->product_id);
+        \DB::table('catalogue_product')
+            ->where('saved_catalogue_id', $catalogue->id)
+            ->where('product_id', $request->product_id)
+            ->where('product_variant_id', $request->product_variant_id)
+            ->delete();
 
         return response()->json(['message' => 'Removed from cart']);
     }
@@ -126,7 +143,7 @@ class SavedCatalogueController extends Controller implements HasMiddleware
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'nullable|exists:customers,id',
             'show_price' => 'boolean',
         ]);
 
@@ -142,12 +159,17 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             
             $original->update([
                 'name' => $request->name,
-                'customer_id' => $request->customer_id,
+                'customer_id' => $request->customer_id ?? $original->customer_id,
                 'show_price' => $request->boolean('show_price', true)
             ]);
             
-            // Sync products
-            $original->products()->sync($catalogue->products->pluck('id'));
+            // Sync products safely avoiding identical key overwrites
+            $original->products()->detach();
+            foreach ($catalogue->products as $prod) {
+                $original->products()->attach($prod->id, [
+                    'product_variant_id' => $prod->pivot->product_variant_id
+                ]);
+            }
 
             // Create new version
             $latestVersionNumber = $original->latestVersion ? $original->latestVersion->version_number : 0;
@@ -155,7 +177,17 @@ class SavedCatalogueController extends Controller implements HasMiddleware
                 'version_number' => $latestVersionNumber + 1,
                 'show_price' => $request->boolean('show_price', true)
             ]);
-            $version->products()->sync($catalogue->products->pluck('id'));
+            
+            foreach ($catalogue->products as $prod) {
+                $variant = $prod->pivot->product_variant_id ? \App\Models\ProductVariant::find($prod->pivot->product_variant_id) : null;
+                $price = $variant ? $variant->price : ($prod->variants->first()->price ?? 0);
+                
+                $version->products()->attach($prod->id, [
+                    'product_variant_id' => $prod->pivot->product_variant_id,
+                    'price_at_time_of_save' => $price,
+                    'product_name_at_time_of_save' => $prod->name
+                ]);
+            }
 
             // Clear draft cart
             $catalogue->products()->detach();
@@ -180,7 +212,17 @@ class SavedCatalogueController extends Controller implements HasMiddleware
             'version_number' => 1,
             'show_price' => $request->boolean('show_price', true)
         ]);
-        $version->products()->sync($catalogue->products->pluck('id'));
+        
+        foreach ($catalogue->products as $prod) {
+            $variant = $prod->pivot->product_variant_id ? \App\Models\ProductVariant::find($prod->pivot->product_variant_id) : null;
+            $price = $variant ? $variant->price : ($prod->variants->first()->price ?? 0);
+            
+            $version->products()->attach($prod->id, [
+                'product_variant_id' => $prod->pivot->product_variant_id,
+                'price_at_time_of_save' => $price,
+                'product_name_at_time_of_save' => $prod->name
+            ]);
+        }
 
         return response()->json([
             'message' => 'Catalogue generated successfully',
@@ -197,11 +239,17 @@ class SavedCatalogueController extends Controller implements HasMiddleware
         $draft = $this->getDraftCatalogue();
 
         // Sync original products to draft
-        $draft->products()->sync($original->products->pluck('id'));
+        $draft->products()->detach();
+        foreach ($original->products as $prod) {
+            $draft->products()->attach($prod->id, [
+                'product_variant_id' => $prod->pivot->product_variant_id
+            ]);
+        }
         $draft->update([
             'editing_catalogue_id' => $original->id,
             'name' => $original->name,
-            'show_price' => $original->show_price
+            'show_price' => $original->show_price,
+            'customer_id' => $original->customer_id
         ]);
 
         return response()->json(['message' => 'Loaded into cart', 'cart' => $draft]);

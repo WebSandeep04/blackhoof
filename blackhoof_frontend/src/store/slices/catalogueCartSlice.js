@@ -7,10 +7,14 @@ export const fetchCartAsync = createAsyncThunk(
         try {
             const response = await api.get('/cart');
             return {
-                items: response.data.cart.products || [],
+                items: (response.data.cart.products || []).map(p => ({
+                    ...p,
+                    cart_variant_id: p.pivot?.product_variant_id || null
+                })),
                 cartName: response.data.cart.name,
                 cartShowPrice: response.data.cart.show_price !== undefined ? response.data.cart.show_price : true,
-                editingCatalogueId: response.data.cart.editing_catalogue_id
+                editingCatalogueId: response.data.cart.editing_catalogue_id,
+                cartCustomerId: response.data.cart.customer_id
             };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to fetch cart');
@@ -20,10 +24,10 @@ export const fetchCartAsync = createAsyncThunk(
 
 export const addToCartAsync = createAsyncThunk(
     'catalogueCart/addToCart',
-    async (product, { rejectWithValue }) => {
+    async ({ product, variantId }, { rejectWithValue }) => {
         try {
-            await api.post('/cart/add', { product_id: product.id });
-            return product;
+            await api.post('/cart/add', { product_id: product.id, product_variant_id: variantId });
+            return { product, variantId };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to add to cart');
         }
@@ -32,10 +36,10 @@ export const addToCartAsync = createAsyncThunk(
 
 export const removeFromCartAsync = createAsyncThunk(
     'catalogueCart/removeFromCart',
-    async (productId, { rejectWithValue }) => {
+    async ({ productId, variantId }, { rejectWithValue }) => {
         try {
-            await api.post('/cart/remove', { product_id: productId });
-            return productId;
+            await api.post('/cart/remove', { product_id: productId, product_variant_id: variantId });
+            return { productId, variantId };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to remove from cart');
         }
@@ -59,6 +63,7 @@ const initialState = {
     cartName: null,
     cartShowPrice: true,
     editingCatalogueId: null,
+    cartCustomerId: null,
     loading: false,
     error: null,
 };
@@ -80,6 +85,7 @@ const catalogueCartSlice = createSlice({
                 state.cartName = action.payload.cartName;
                 state.cartShowPrice = action.payload.cartShowPrice;
                 state.editingCatalogueId = action.payload.editingCatalogueId;
+                state.cartCustomerId = action.payload.cartCustomerId;
             })
             .addCase(fetchCartAsync.rejected, (state, action) => {
                 state.loading = false;
@@ -87,15 +93,16 @@ const catalogueCartSlice = createSlice({
             })
             // Add to Cart
             .addCase(addToCartAsync.fulfilled, (state, action) => {
-                const product = action.payload;
-                const exists = state.cartItems.find(item => item.id === product.id);
+                const { product, variantId } = action.payload;
+                const exists = state.cartItems.find(item => item.id === product.id && item.cart_variant_id === variantId);
                 if (!exists) {
-                    state.cartItems.push(product);
+                    state.cartItems.push({ ...product, cart_variant_id: variantId });
                 }
             })
             // Remove from Cart
             .addCase(removeFromCartAsync.fulfilled, (state, action) => {
-                state.cartItems = state.cartItems.filter(item => item.id !== action.payload);
+                const { productId, variantId } = action.payload;
+                state.cartItems = state.cartItems.filter(item => !(item.id === productId && item.cart_variant_id === variantId));
             })
             // Clear Cart
             .addCase(clearCartAsync.fulfilled, (state) => {
@@ -103,6 +110,7 @@ const catalogueCartSlice = createSlice({
                 state.cartName = null;
                 state.cartShowPrice = true;
                 state.editingCatalogueId = null;
+                state.cartCustomerId = null;
             });
     }
 });

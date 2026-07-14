@@ -25,7 +25,9 @@ class SavedCatalogue extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'catalogue_product');
+        return $this->belongsToMany(Product::class, 'catalogue_product')
+                    ->withPivot('product_variant_id')
+                    ->withTimestamps();
     }
 
     public function versions()

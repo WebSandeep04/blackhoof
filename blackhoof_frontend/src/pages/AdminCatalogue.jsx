@@ -16,17 +16,17 @@ export default function AdminCatalogue() {
     const { user: authUser } = useSelector(state => state.auth);
     const { allCountries } = useSelector(state => state.countries);
     const loading = cataloguesLoading;
-    
+
     const hasPermission = (permission) => authUser?.permissions?.includes(permission);
 
-    
+
     const [selectedCatalogue, setSelectedCatalogue] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+
     // New states
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [versions, setVersions] = useState([]);
-    
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editProducts, setEditProducts] = useState([]);
     const [productSearch, setProductSearch] = useState('');
@@ -94,7 +94,7 @@ export default function AdminCatalogue() {
         }
     };
 
-    
+
     const handleDownloadVersion = (catalogueId, versionId) => {
         window.open(`http://localhost:8000/api/saved-catalogues/${catalogueId}/download?version_id=${versionId}`, '_blank');
     };
@@ -121,7 +121,7 @@ export default function AdminCatalogue() {
 
     const handleCreateNew = async () => {
         try {
-            await dispatch(clearCartAsync()).unwrap();
+            // await dispatch(clearCartAsync()).unwrap();
             navigate('/admin/catalogue/preview');
         } catch (error) {
             console.error('Failed to clear cart:', error);
@@ -136,7 +136,7 @@ export default function AdminCatalogue() {
                 try {
                     const res = await api.get(`/products?search=${productSearch}`);
                     setSearchResults(res.data.data || res.data);
-                } catch (err) {}
+                } catch (err) { }
                 setIsSearching(false);
             }, 500);
             return () => clearTimeout(delay);
@@ -176,7 +176,7 @@ export default function AdminCatalogue() {
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-4 w-4 text-gray-400" />
                         </div>
-                        <input 
+                        <input
                             type="text"
                             placeholder="Search catalogues..."
                             value={searchQuery}
@@ -186,7 +186,7 @@ export default function AdminCatalogue() {
                     </div>
                 </div>
                 {hasPermission('create saved catalogues') && (
-                    <button 
+                    <button
                         onClick={handleCreateNew}
                         className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
                         title="Add Catalogue"
@@ -196,10 +196,10 @@ export default function AdminCatalogue() {
                 )}
             </div>
 
-            <DataTable 
+            <DataTable
                 columns={[
-                    { 
-                        header: 'Customer Name', 
+                    {
+                        header: 'Customer Name',
                         key: 'name',
                         render: (catalogue) => (
                             <div className="flex items-center gap-3">
@@ -212,8 +212,8 @@ export default function AdminCatalogue() {
                             </div>
                         )
                     },
-                    { 
-                        header: 'Products', 
+                    {
+                        header: 'Products',
                         key: 'products_count',
                         render: (catalogue) => (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 font-medium text-xs">
@@ -226,8 +226,8 @@ export default function AdminCatalogue() {
                         key: 'country',
                         render: (catalogue) => catalogue.customer?.country?.name || 'N/A'
                     },
-                    { 
-                        header: 'Created Date', 
+                    {
+                        header: 'Created Date',
                         key: 'created_at',
                         render: (catalogue) => new Date(catalogue.created_at).toLocaleDateString()
                     },
@@ -238,7 +238,7 @@ export default function AdminCatalogue() {
                         cellClassName: 'text-right space-x-2',
                         render: (catalogue) => (
                             <>
-                                <button 
+                                <button
                                     onClick={() => openProductsModal(catalogue)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-brand-primary bg-brand-light hover:bg-brand-primary hover:text-white rounded-lg transition font-medium text-xs"
                                     title="View Products"
@@ -246,14 +246,14 @@ export default function AdminCatalogue() {
                                     <Eye className="w-4 h-4" /> View
                                 </button>
 
-                                <button 
+                                <button
                                     onClick={() => handleEdit(catalogue)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition font-medium text-xs"
                                     title="Edit"
                                 >
                                     <Edit2 className="w-4 h-4" /> Edit
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => openHistoryModal(catalogue)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-orange-600 bg-orange-50 hover:bg-orange-600 hover:text-white rounded-lg transition font-medium text-xs"
                                     title="History"
@@ -261,14 +261,14 @@ export default function AdminCatalogue() {
                                     <History className="w-4 h-4" /> History
                                 </button>
 
-                                <button 
+                                <button
                                     onClick={() => handleDownload(catalogue.id)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium text-xs"
                                     title="Download PDF"
                                 >
                                     <Download className="w-4 h-4" /> PDF
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handleDelete(catalogue.id)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition font-medium text-xs"
                                     title="Delete"
@@ -278,9 +278,9 @@ export default function AdminCatalogue() {
                             </>
                         )
                     }
-                ]} 
-                data={catalogues} 
-                keyExtractor={(catalogue) => catalogue.id} 
+                ]}
+                data={catalogues}
+                keyExtractor={(catalogue) => catalogue.id}
                 emptyMessage="No saved catalogues yet."
                 pagination={pagination}
                 onPageChange={handlePageChange}
@@ -291,7 +291,7 @@ export default function AdminCatalogue() {
             {isModalOpen && selectedCatalogue && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-                        
+
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-brand-primary rounded-lg text-white">
@@ -313,7 +313,7 @@ export default function AdminCatalogue() {
                                     const allImages = [...(product.images || []), ...(product.variants?.flatMap(v => v.images || []) || [])];
                                     const mainImage = allImages.find(img => img.is_main) || allImages[0];
                                     const imageUrl = mainImage ? (mainImage.url || (mainImage.image_path ? (mainImage.image_path.startsWith('http') ? mainImage.image_path : `http://localhost:8000/storage/${mainImage.image_path}`) : null)) : null;
-                                    
+
                                     return (
                                         <div key={product.id} className="flex gap-4 p-3 rounded-xl border border-gray-100 bg-white hover:border-brand-primary/30 transition shadow-sm">
                                             <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border border-gray-100">
@@ -337,13 +337,13 @@ export default function AdminCatalogue() {
                         </div>
 
                         <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-                            <button 
+                            <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition"
                             >
                                 Close
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleDownload(selectedCatalogue.id)}
                                 className="px-4 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-hover rounded-lg flex items-center gap-2 transition shadow-sm"
                             >
@@ -371,7 +371,7 @@ export default function AdminCatalogue() {
                                                 <span className="font-semibold">Version {v.version_number}</span>
                                                 <p className="text-xs text-gray-500">{new Date(v.created_at).toLocaleString()}</p>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => handleDownloadVersion(selectedCatalogue.id, v.id)}
                                                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium flex items-center gap-1"
                                             >
@@ -401,16 +401,16 @@ export default function AdminCatalogue() {
                                     {editProducts.map(p => (
                                         <div key={p.id} className="flex justify-between items-center p-2 border rounded">
                                             <span className="text-sm truncate">{p.name}</span>
-                                            <button onClick={() => handleRemoveProduct(p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4"/></button>
+                                            <button onClick={() => handleRemoveProduct(p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4" /></button>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="w-1/2 p-6 overflow-y-auto">
                                 <h3 className="font-semibold mb-4">Add Products</h3>
-                                <input 
-                                    type="text" 
-                                    placeholder="Search products..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
                                     value={productSearch}
                                     onChange={e => setProductSearch(e.target.value)}
                                     className="w-full p-2 border rounded mb-4"
@@ -420,7 +420,7 @@ export default function AdminCatalogue() {
                                         {searchResults.map(p => (
                                             <div key={p.id} className="flex justify-between items-center p-2 border rounded">
                                                 <span className="text-sm truncate">{p.name}</span>
-                                                <button onClick={() => handleAddProduct(p)} className="text-brand-primary hover:bg-brand-light p-1 rounded"><Plus className="w-4 h-4"/></button>
+                                                <button onClick={() => handleAddProduct(p)} className="text-brand-primary hover:bg-brand-light p-1 rounded"><Plus className="w-4 h-4" /></button>
                                             </div>
                                         ))}
                                     </div>

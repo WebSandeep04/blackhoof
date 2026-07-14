@@ -20,6 +20,7 @@ export default function CataloguePreview() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     const [loadingProductId, setLoadingProductId] = useState(null);
+    const [selectedVariants, setSelectedVariants] = useState({});
     
     // For expanding/collapsing parent categories in UI
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -62,19 +63,24 @@ export default function CataloguePreview() {
         });
     };
 
+    const handleVariantChange = (productId, variantId) => {
+        setSelectedVariants(prev => ({ ...prev, [productId]: variantId ? parseInt(variantId) : null }));
+    };
+
     const handleAddToCart = async (product) => {
         setLoadingProductId(product.id);
+        const variantId = selectedVariants[product.id] || null;
         try {
-            await dispatch(addToCartAsync(product)).unwrap();
+            await dispatch(addToCartAsync({ product, variantId })).unwrap();
         } finally {
             setLoadingProductId(null);
         }
     };
 
-    const handleRemoveFromCart = async (productId) => {
+    const handleRemoveFromCart = async (productId, variantId = null) => {
         setLoadingProductId(productId);
         try {
-            await dispatch(removeFromCartAsync(productId)).unwrap();
+            await dispatch(removeFromCartAsync({ productId, variantId })).unwrap();
         } finally {
             setLoadingProductId(null);
         }
@@ -296,33 +302,49 @@ export default function CataloguePreview() {
                                                 )}
                                             </div>
                                             
+                                            {/* Variant Selector */}
+                                            {product.variants?.length > 0 && (
+                                                <div className="mt-3 mb-2">
+                                                    <select 
+                                                        className="w-full p-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-brand-primary bg-white truncate"
+                                                        value={selectedVariants[product.id] || ''}
+                                                        onChange={(e) => handleVariantChange(product.id, e.target.value)}
+                                                    >
+                                                        <option value="">All Variants</option>
+                                                        {product.variants.map(v => (
+                                                            <option key={v.id} value={v.id}>{v.sku} - ${v.price}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+                                            
                                             {/* Add to Cart Button */}
-                                            <div className="mt-4">
-                                                {cartItems.some(item => item.id === product.id) ? (
+                                            <div className="mt-auto">
+                                                {cartItems.some(item => item.id === product.id && item.cart_variant_id == (selectedVariants[product.id] || null)) ? (
                                                     <button 
-                                                        onClick={() => handleRemoveFromCart(product.id)}
+                                                        onClick={() => handleRemoveFromCart(product.id, selectedVariants[product.id] || null)}
                                                         disabled={loadingProductId === product.id}
-                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-75 disabled:cursor-wait"
+                                                        className="w-full py-2 px-2 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-75 disabled:cursor-wait"
                                                     >
                                                         {loadingProductId === product.id ? (
-                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin shrink-0"></div>
                                                         ) : (
-                                                            <Check className="w-4 h-4 text-green-600" />
+                                                            <Check className="w-4 h-4 text-green-600 shrink-0" />
                                                         )}
-                                                        {loadingProductId === product.id ? 'Removing...' : 'Added to Catalogue'}
+                                                        <span className="truncate">{loadingProductId === product.id ? 'Removing...' : 'Added'}</span>
                                                     </button>
                                                 ) : (
                                                     <button 
                                                         onClick={() => handleAddToCart(product)}
                                                         disabled={loadingProductId === product.id}
-                                                        className="w-full py-2 flex items-center justify-center gap-2 bg-brand-light text-brand-primary font-medium rounded-lg hover:bg-brand-primary hover:text-white transition disabled:opacity-75 disabled:cursor-wait group-[.hover]:hover:bg-brand-primary"
+                                                        className="w-full py-2 px-2 flex items-center justify-center gap-1.5 bg-brand-light text-brand-primary text-sm font-medium rounded-lg hover:bg-brand-primary hover:text-white transition disabled:opacity-75 disabled:cursor-wait group-[.hover]:hover:bg-brand-primary"
                                                     >
                                                         {loadingProductId === product.id ? (
-                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                                                            <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin shrink-0"></div>
                                                         ) : (
-                                                            <Plus className="w-4 h-4" />
+                                                            <Plus className="w-4 h-4 shrink-0" />
                                                         )}
-                                                        {loadingProductId === product.id ? 'Adding...' : 'Add to Catalogue'}
+                                                        <span className="truncate">{loadingProductId === product.id ? 'Adding...' : 'Add to List'}</span>
                                                     </button>
                                                 )}
                                             </div>

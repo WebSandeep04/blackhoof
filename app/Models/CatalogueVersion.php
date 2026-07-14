@@ -22,6 +22,8 @@ class CatalogueVersion extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'catalogue_version_product');
+        return $this->belongsToMany(Product::class, 'catalogue_version_product')
+                    ->withPivot(['product_variant_id', 'price_at_time_of_save', 'product_name_at_time_of_save'])
+                    ->withTimestamps();
     }
 }
