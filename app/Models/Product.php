@@ -29,6 +29,7 @@ class Product extends Model
         'is_trending',
         'is_top_seller',
         'show_on_website',
+        'ready_to_publish',
         'product_for',
     ];
 
@@ -37,6 +38,7 @@ class Product extends Model
         'is_trending' => 'boolean',
         'is_top_seller' => 'boolean',
         'show_on_website' => 'boolean',
+        'ready_to_publish' => 'boolean',
     ];
 
     public function category()

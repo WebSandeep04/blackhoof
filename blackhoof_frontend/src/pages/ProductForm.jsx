@@ -36,6 +36,7 @@ export default function ProductForm() {
     const [isTopSeller, setIsTopSeller] = useState(false);
     const [includeInCatalogue, setIncludeInCatalogue] = useState(true);
     const [showOnWebsite, setShowOnWebsite] = useState(true);
+    const [readyToPublish, setReadyToPublish] = useState(false);
     const [productFor, setProductFor] = useState('blackhoof');
     const [hasVariants, setHasVariants] = useState(true); // Default to true as requested
     // Images have been moved to variant level
@@ -110,6 +111,7 @@ export default function ProductForm() {
             setIsTopSeller(currentProduct.is_top_seller ?? false);
             setIncludeInCatalogue(currentProduct.include_in_catalogue ?? true);
             setShowOnWebsite(currentProduct.show_on_website ?? true);
+            setReadyToPublish(currentProduct.ready_to_publish ?? false);
             setProductFor(currentProduct.product_for || 'blackhoof');
             
 
@@ -333,6 +335,7 @@ export default function ProductForm() {
         formData.append('is_top_seller', isTopSeller ? 1 : 0);
         formData.append('include_in_catalogue', includeInCatalogue ? 1 : 0);
         formData.append('show_on_website', showOnWebsite ? 1 : 0);
+        formData.append('ready_to_publish', readyToPublish ? 1 : 0);
         formData.append('product_for', productFor);
         formData.append('has_variants', hasVariants ? 1 : 0);
         // Clean up variants payload so we don't send File objects in JSON
@@ -672,6 +675,16 @@ export default function ProductForm() {
                                 </span>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" className="sr-only peer" checked={showOnWebsite} onChange={e => setShowOnWebsite(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <span className={`text-sm font-medium ${readyToPublish ? 'text-brand-primary' : 'text-gray-500'}`}>
+                                    {readyToPublish ? 'Ready to Publish' : 'Draft'}
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={readyToPublish} onChange={e => setReadyToPublish(e.target.checked)} />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                                 </label>
                             </div>

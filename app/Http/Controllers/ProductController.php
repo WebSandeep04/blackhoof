@@ -85,6 +85,7 @@ class ProductController extends Controller implements HasMiddleware
             'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
             'show_on_website' => 'boolean',
+            'ready_to_publish' => 'boolean',
             'has_variants' => 'required|boolean', // Frontend should send this
             'variants' => 'required|string', // JSON string of variants array
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -106,6 +107,7 @@ class ProductController extends Controller implements HasMiddleware
                 'is_top_seller' => $request->is_top_seller ?? false,
                 'include_in_catalogue' => $request->include_in_catalogue ?? true,
                 'show_on_website' => $request->show_on_website ?? true,
+                'ready_to_publish' => $request->ready_to_publish ?? false,
                 'product_for' => $request->product_for,
             ]);
 
@@ -208,6 +210,7 @@ class ProductController extends Controller implements HasMiddleware
             'is_top_seller' => 'boolean',
             'include_in_catalogue' => 'boolean',
             'show_on_website' => 'boolean',
+            'ready_to_publish' => 'boolean',
             'has_variants' => 'required|boolean',
             'variants' => 'required|string', // JSON string
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -230,6 +233,7 @@ class ProductController extends Controller implements HasMiddleware
                 'is_top_seller' => $request->has('is_top_seller') ? $request->is_top_seller : $product->is_top_seller,
                 'include_in_catalogue' => $request->has('include_in_catalogue') ? $request->include_in_catalogue : $product->include_in_catalogue,
                 'show_on_website' => $request->has('show_on_website') ? $request->show_on_website : $product->show_on_website,
+                'ready_to_publish' => $request->has('ready_to_publish') ? $request->ready_to_publish : $product->ready_to_publish,
                 'product_for' => $request->product_for,
             ]);
 
