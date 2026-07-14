@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::apiResource('inquiry_statuses', \App\Http\Controllers\InquiryStatusController::class);
     Route::get('login-logs', [\App\Http\Controllers\LoginLogController::class, 'index']);
+    Route::get('audit-logs', [\App\Http\Controllers\LogController::class, 'index']);
     Route::apiResource('countries', \App\Http\Controllers\CountryController::class);
     Route::apiResource('customers', \App\Http\Controllers\CustomerController::class);
 });
