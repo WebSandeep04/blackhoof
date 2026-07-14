@@ -5,11 +5,10 @@ export const fetchSavedCatalogues = createAsyncThunk(
     'savedCatalogues/fetchAll',
     async ({ page = 1, search = '', country_id = '' } = {}, { rejectWithValue }) => {
         try {
-            // Need to pass page to api
-            const response = await api.get(`/saved-catalogues?page=${page}&search=${search}&country_id=${country_id}`);
+            const response = await api.get(`/catalogues?page=${page}&search=${search}&customer_id=${country_id}`);
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to fetch saved catalogues');
+            return rejectWithValue(error.response?.data || 'Failed to fetch catalogues');
         }
     }
 );
@@ -18,22 +17,34 @@ export const deleteSavedCatalogue = createAsyncThunk(
     'savedCatalogues/delete',
     async (id, { rejectWithValue }) => {
         try {
-            await api.delete(`/saved-catalogues/${id}`);
+            await api.delete(`/catalogues/${id}`);
             return id;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to delete saved catalogue');
+            return rejectWithValue(error.response?.data || 'Failed to delete catalogue');
         }
     }
 );
 
-export const updateSavedCatalogue = createAsyncThunk(
-    'savedCatalogues/update',
-    async ({ id, product_ids }, { rejectWithValue }) => {
+export const saveNewVersionAsync = createAsyncThunk(
+    'savedCatalogues/saveNewVersion',
+    async ({ id, products }, { rejectWithValue }) => {
         try {
-            const response = await api.put(`/saved-catalogues/${id}`, { product_ids });
+            const response = await api.post(`/catalogues/${id}/versions`, { products });
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to update saved catalogue');
+            return rejectWithValue(error.response?.data || 'Failed to save new version');
+        }
+    }
+);
+
+export const fetchCatalogueVersion = createAsyncThunk(
+    'savedCatalogues/fetchVersion',
+    async ({ catalogueId, versionId }, { rejectWithValue }) => {
+        try {
+            const response = await api.get(`/catalogues/${catalogueId}/versions/${versionId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || 'Failed to fetch version');
         }
     }
 );
@@ -42,7 +53,7 @@ export const fetchCatalogueVersions = createAsyncThunk(
     'savedCatalogues/fetchVersions',
     async (id, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/saved-catalogues/${id}/versions`);
+            const response = await api.get(`/catalogues/${id}/versions`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to fetch catalogue versions');
@@ -90,13 +101,6 @@ const savedCataloguesSlice = createSlice({
             // Delete
             .addCase(deleteSavedCatalogue.fulfilled, (state, action) => {
                 state.catalogues = state.catalogues.filter(c => c.id !== action.payload);
-            })
-            // Update
-            .addCase(updateSavedCatalogue.fulfilled, (state, action) => {
-                const index = state.catalogues.findIndex(c => c.id === action.payload.catalogue.id);
-                if (index !== -1) {
-                    state.catalogues[index] = action.payload.catalogue;
-                }
             });
     }
 });

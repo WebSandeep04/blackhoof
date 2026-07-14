@@ -10,7 +10,7 @@ use App\Http\Controllers\AttributeController;
 use App\Http\Controllers\ProductController;
 
 use App\Http\Controllers\CatalogueController;
-use App\Http\Controllers\SavedCatalogueController;
+use App\Http\Controllers\CatalogueManagerController;
 use App\Http\Controllers\BlogCategoryController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\DashboardController;
@@ -20,7 +20,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/forgot-password/reset', [AuthController::class, 'verifyOtpAndResetPassword']);
 Route::get('/catalogue', [CatalogueController::class, 'index']);
-Route::get('/saved-catalogues/{id}/download', [SavedCatalogueController::class, 'download']);
+Route::get('/catalogues/{id}/download', [CatalogueManagerController::class, 'download']);
+Route::post('/catalogues/{id}/load-to-draft', [CatalogueManagerController::class, 'loadToDraft']);
+Route::post('/catalogues/{id}/save-draft-as-version', [CatalogueManagerController::class, 'saveDraftAsVersion']);
 Route::post('/inqueries', [\App\Http\Controllers\InqueryController::class, 'store']);
 
 // Protected routes
@@ -29,11 +31,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     
     // Cart Endpoints
-    Route::get('/cart', [SavedCatalogueController::class, 'getCart']);
-    Route::post('/cart/add', [SavedCatalogueController::class, 'addToCart']);
-    Route::post('/cart/remove', [SavedCatalogueController::class, 'removeFromCart']);
-    Route::post('/cart/clear', [SavedCatalogueController::class, 'clearCart']);
-    Route::post('/cart/checkout', [SavedCatalogueController::class, 'checkout']);
+    Route::get('/cart', [CatalogueManagerController::class, 'getCart']);
+    Route::post('/cart/add', [CatalogueManagerController::class, 'addToCart']);
+    Route::post('/cart/remove', [CatalogueManagerController::class, 'removeFromCart']);
+    Route::post('/cart/clear', [CatalogueManagerController::class, 'clearCart']);
+    Route::post('/cart/reorder', [CatalogueManagerController::class, 'reorderCart']);
+    Route::post('/catalogues/generate', [CatalogueManagerController::class, 'generate']);
 
     // Admin routes (Protected by Controller-level Spatie permissions)
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
@@ -53,11 +56,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // We already have a public store for inqueries, so we exclude store here
     Route::apiResource('inqueries', \App\Http\Controllers\InqueryController::class)->except(['store']);
     
-    // Saved Catalogues management
-    Route::get('saved-catalogues', [SavedCatalogueController::class, 'index']);
-    Route::post('saved-catalogues/{id}/load-to-draft', [SavedCatalogueController::class, 'loadToDraft']);
-    Route::delete('saved-catalogues/{id}', [SavedCatalogueController::class, 'destroy']);
-    Route::get('saved-catalogues/{id}/versions', [SavedCatalogueController::class, 'versions']);
+    // Catalogues management
+    Route::get('catalogues', [CatalogueManagerController::class, 'index']);
+    Route::get('catalogues/{id}/versions', [CatalogueManagerController::class, 'versions']);
+    Route::get('catalogues/{catalogueId}/versions/{versionId}', [CatalogueManagerController::class, 'getVersion']);
+    Route::post('catalogues/{id}/versions', [CatalogueManagerController::class, 'saveNewVersion']);
+    Route::post('catalogues/versions/{versionId}/clone', [CatalogueManagerController::class, 'cloneToNewClient']);
+    Route::delete('catalogues/{id}', [CatalogueManagerController::class, 'destroy']);
     
     Route::get('permissions', function () {
         return response()->json(\Spatie\Permission\Models\Permission::all());

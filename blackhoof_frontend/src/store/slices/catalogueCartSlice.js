@@ -7,14 +7,12 @@ export const fetchCartAsync = createAsyncThunk(
         try {
             const response = await api.get('/cart');
             return {
-                items: (response.data.cart.products || []).map(p => ({
-                    ...p,
-                    cart_variant_id: p.pivot?.product_variant_id || null
-                })),
-                cartName: response.data.cart.name,
-                cartShowPrice: response.data.cart.show_price !== undefined ? response.data.cart.show_price : true,
-                editingCatalogueId: response.data.cart.editing_catalogue_id,
-                cartCustomerId: response.data.cart.customer_id
+                items: (response.data.cart || []).map(item => ({
+                    ...item.product,
+                    cart_variant_id: item.product_variant_id || null,
+                    sort_order: item.sort_order,
+                    cart_item_id: item.id
+                }))
             };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to fetch cart');
@@ -60,9 +58,8 @@ export const clearCartAsync = createAsyncThunk(
 
 const initialState = {
     cartItems: [],
-    cartName: null,
-    cartShowPrice: true,
     editingCatalogueId: null,
+    cartName: null,
     cartCustomerId: null,
     loading: false,
     error: null,
@@ -71,7 +68,13 @@ const initialState = {
 const catalogueCartSlice = createSlice({
     name: 'catalogueCart',
     initialState,
-    reducers: {},
+    reducers: {
+        setEditingCatalogue: (state, action) => {
+            state.editingCatalogueId = action.payload.id;
+            state.cartName = action.payload.name;
+            state.cartCustomerId = action.payload.customerId;
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Fetch Cart
@@ -82,10 +85,6 @@ const catalogueCartSlice = createSlice({
             .addCase(fetchCartAsync.fulfilled, (state, action) => {
                 state.loading = false;
                 state.cartItems = action.payload.items;
-                state.cartName = action.payload.cartName;
-                state.cartShowPrice = action.payload.cartShowPrice;
-                state.editingCatalogueId = action.payload.editingCatalogueId;
-                state.cartCustomerId = action.payload.cartCustomerId;
             })
             .addCase(fetchCartAsync.rejected, (state, action) => {
                 state.loading = false;
@@ -107,12 +106,12 @@ const catalogueCartSlice = createSlice({
             // Clear Cart
             .addCase(clearCartAsync.fulfilled, (state) => {
                 state.cartItems = [];
-                state.cartName = null;
-                state.cartShowPrice = true;
                 state.editingCatalogueId = null;
+                state.cartName = null;
                 state.cartCustomerId = null;
             });
     }
 });
 
+export const { setEditingCatalogue } = catalogueCartSlice.actions;
 export default catalogueCartSlice.reducer;

@@ -8,14 +8,12 @@ import api from '../api/axios';
 export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
-    const { cartName, editingCatalogueId, cartShowPrice, cartCustomerId } = useSelector(state => state.catalogueCart); // wait, cartCustomerId may not exist yet, we'll just ignore it or use a default
+    const { cartName, editingCatalogueId, cartCustomerId } = useSelector(state => state.catalogueCart);
     const { allCustomers } = useSelector(state => state.customers);
     const [catalogueName, setCatalogueName] = useState('');
     const [customerId, setCustomerId] = useState('');
-    const [showPrice, setShowPrice] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [saveAsNew, setSaveAsNew] = useState(false);
-
     
     useEffect(() => {
         if (isOpen) {
@@ -24,15 +22,13 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         if (isOpen && cartName) {
             setCatalogueName(cartName);
             if (cartCustomerId) setCustomerId(cartCustomerId);
-            setShowPrice(cartShowPrice !== undefined ? cartShowPrice : true);
             setSaveAsNew(false);
         } else if (isOpen && !cartName) {
             setCatalogueName('');
             setCustomerId('');
-            setShowPrice(true);
             setSaveAsNew(false);
         }
-    }, [isOpen, cartName, cartShowPrice, cartCustomerId, dispatch]);
+    }, [isOpen, cartName, cartCustomerId, dispatch]);
 
     if (!isOpen) return null;
 
@@ -43,19 +39,24 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
 
         setIsGenerating(true);
         try {
-            // 1. Save catalogue and attach products in backend (checkout)
-            const response = await api.post('/cart/checkout', { 
-                name: catalogueName,
-                customer_id: customerId,
-                save_as_new: saveAsNew,
-                show_price: showPrice
-            });
-            
-            const catalogueId = response.data.catalogue_id;
+            let catalogueId;
+
+            if (editingCatalogueId && !saveAsNew) {
+                // Save draft as new version
+                const response = await api.post(`/catalogues/${editingCatalogueId}/save-draft-as-version`);
+                catalogueId = response.data.catalogue_id;
+            } else {
+                // Generate completely new catalogue
+                const response = await api.post('/catalogues/generate', { 
+                    name: catalogueName,
+                    customer_id: customerId
+                });
+                catalogueId = response.data.catalogue_id;
+            }
 
             // 2. Trigger download in real-time
             // We open it in a new tab so the browser handles the streaming PDF download
-            window.open(`http://localhost:8000/api/saved-catalogues/${catalogueId}/download`, '_blank');
+            window.open(`http://localhost:8000/api/catalogues/${catalogueId}/download`, '_blank');
             
             setIsGenerating(false);
             dispatch(clearCartAsync());
@@ -175,19 +176,6 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                         <p className="text-xs text-gray-500 mt-2">The selected customer's name will appear on the cover of the generated PDF.</p>
                                     </div>
                                 )}
-
-                                <div className="mb-6 flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                    <input
-                                        type="checkbox"
-                                        id="showPrice"
-                                        checked={showPrice}
-                                        onChange={(e) => setShowPrice(e.target.checked)}
-                                        className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
-                                    />
-                                    <label htmlFor="showPrice" className="text-sm font-medium text-gray-700 cursor-pointer">
-                                        Show product prices in catalogue
-                                    </label>
-                                </div>
 
                                 <button
                                     type="submit"

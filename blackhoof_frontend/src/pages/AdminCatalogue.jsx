@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSavedCatalogues, deleteSavedCatalogue, fetchCatalogueVersions } from '../store/slices/savedCataloguesSlice';
 import { fetchCountries } from '../store/slices/countriesSlice';
-import { clearCartAsync } from '../store/slices/catalogueCartSlice';
+import { clearCartAsync, fetchCartAsync, setEditingCatalogue } from '../store/slices/catalogueCartSlice';
 import api from '../api/axios';
 import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2, History, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -26,12 +26,6 @@ export default function AdminCatalogue() {
     // New states
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [versions, setVersions] = useState([]);
-
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editProducts, setEditProducts] = useState([]);
-    const [productSearch, setProductSearch] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCountry, setSelectedCountry] = useState('');
@@ -58,7 +52,7 @@ export default function AdminCatalogue() {
     };
 
     const handleDownload = (id) => {
-        window.open(`http://localhost:8000/api/saved-catalogues/${id}/download`, '_blank');
+        window.open(`http://localhost:8000/api/catalogues/${id}/download`, '_blank');
     };
 
     const handleDelete = async (id) => {
@@ -96,7 +90,7 @@ export default function AdminCatalogue() {
 
 
     const handleDownloadVersion = (catalogueId, versionId) => {
-        window.open(`http://localhost:8000/api/saved-catalogues/${catalogueId}/download?version_id=${versionId}`, '_blank');
+        window.open(`http://localhost:8000/api/catalogues/${catalogueId}/download?version_id=${versionId}`, '_blank');
     };
 
     const openHistoryModal = async (catalogue) => {
@@ -112,7 +106,13 @@ export default function AdminCatalogue() {
 
     const handleEdit = async (catalogue) => {
         try {
-            await api.post(`/saved-catalogues/${catalogue.id}/load-to-draft`);
+            const res = await api.post(`/catalogues/${catalogue.id}/load-to-draft`);
+            dispatch(setEditingCatalogue({ 
+                id: catalogue.id, 
+                name: res.data.catalogue_name, 
+                customerId: res.data.customer_id 
+            }));
+            dispatch(fetchCartAsync());
             navigate('/admin/catalogue/preview');
         } catch (error) {
             Swal.fire('Error', 'Failed to load catalogue for editing', 'error');
@@ -121,29 +121,30 @@ export default function AdminCatalogue() {
 
     const handleCreateNew = async () => {
         try {
-            // await dispatch(clearCartAsync()).unwrap();
+            const cartResponse = await dispatch(fetchCartAsync()).unwrap();
+            
+            if (cartResponse.items && cartResponse.items.length > 0) {
+                const result = await Swal.fire({
+                    title: 'Active Draft Found',
+                    text: "You have unsaved items in your cart. Would you like to resume your previous session or start a fresh catalogue?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2bb69a',
+                    cancelButtonColor: '#ef4444',
+                    confirmButtonText: 'Resume Session',
+                    cancelButtonText: 'Start Fresh'
+                });
+
+                if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
+                    await dispatch(clearCartAsync()).unwrap();
+                }
+            }
             navigate('/admin/catalogue/preview');
         } catch (error) {
-            console.error('Failed to clear cart:', error);
+            console.error('Failed to handle cart:', error);
             navigate('/admin/catalogue/preview');
         }
     };
-
-    useEffect(() => {
-        if (productSearch.length > 2) {
-            setIsSearching(true);
-            const delay = setTimeout(async () => {
-                try {
-                    const res = await api.get(`/products?search=${productSearch}`);
-                    setSearchResults(res.data.data || res.data);
-                } catch (err) { }
-                setIsSearching(false);
-            }, 500);
-            return () => clearTimeout(delay);
-        } else {
-            setSearchResults([]);
-        }
-    }, [productSearch]);
 
     const openProductsModal = (catalogue) => {
         setSelectedCatalogue(catalogue);
@@ -381,55 +382,6 @@ export default function AdminCatalogue() {
                                     ))}
                                 </ul>
                             )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Modal */}
-            {isEditModalOpen && selectedCatalogue && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h2 className="text-xl font-bold">Edit Catalogue: {selectedCatalogue.name}</h2>
-                            <button onClick={() => setIsEditModalOpen(false)}><X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="flex flex-1 overflow-hidden">
-                            <div className="w-1/2 p-6 border-r overflow-y-auto">
-                                <h3 className="font-semibold mb-4">Current Products ({editProducts.length})</h3>
-                                <div className="space-y-2">
-                                    {editProducts.map(p => (
-                                        <div key={p.id} className="flex justify-between items-center p-2 border rounded">
-                                            <span className="text-sm truncate">{p.name}</span>
-                                            <button onClick={() => handleRemoveProduct(p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4" /></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="w-1/2 p-6 overflow-y-auto">
-                                <h3 className="font-semibold mb-4">Add Products</h3>
-                                <input
-                                    type="text"
-                                    placeholder="Search products..."
-                                    value={productSearch}
-                                    onChange={e => setProductSearch(e.target.value)}
-                                    className="w-full p-2 border rounded mb-4"
-                                />
-                                {isSearching ? <p className="text-sm text-gray-500">Searching...</p> : (
-                                    <div className="space-y-2">
-                                        {searchResults.map(p => (
-                                            <div key={p.id} className="flex justify-between items-center p-2 border rounded">
-                                                <span className="text-sm truncate">{p.name}</span>
-                                                <button onClick={() => handleAddProduct(p)} className="text-brand-primary hover:bg-brand-light p-1 rounded"><Plus className="w-4 h-4" /></button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-                            <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                            <button onClick={saveEdit} className="px-4 py-2 text-white bg-brand-primary hover:bg-brand-hover rounded-lg">Save Changes</button>
                         </div>
                     </div>
                 </div>
