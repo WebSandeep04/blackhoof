@@ -33,7 +33,7 @@ class CatalogueManagerController extends Controller implements HasMiddleware
     {
         $userId = Auth::id() ?? 1; // Fallback for dev
 
-        $cartItems = CatalogueCart::with(['product.images', 'product.category', 'variant'])
+        $cartItems = CatalogueCart::with(['product.images', 'product.category', 'product.variants', 'variant'])
             ->where('user_id', $userId)
             ->orderBy('sort_order')
             ->get();
@@ -143,11 +143,11 @@ class CatalogueManagerController extends Controller implements HasMiddleware
                 'user_id' => $userId
             ]);
 
-            // 2. Create Version 1
             $version = CatalogueVersion::create([
                 'catalogue_id' => $catalogue->id,
                 'version_no' => 1,
-                'user_id' => $userId
+                'user_id' => $userId,
+                'show_price' => $request->has('show_price') ? $request->boolean('show_price') : true
             ]);
 
             // 3. Attach Products to Version
@@ -187,13 +187,20 @@ class CatalogueManagerController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Catalogue::with(['customer', 'currentVersion']);
+        $query = Catalogue::with(['customer.country', 'currentVersion' => function($q) {
+            $q->withCount('versionProducts');
+        }]);
             
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
         }
         
         $catalogues = $query->orderBy('created_at', 'desc')->paginate(10);
+        
+        $catalogues->getCollection()->transform(function ($catalogue) {
+            $catalogue->products_count = $catalogue->currentVersion ? $catalogue->currentVersion->version_products_count : 0;
+            return $catalogue;
+        });
             
         return response()->json($catalogues);
     }
@@ -228,7 +235,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
             'products.*.sort_order' => 'required|integer',
             'products.*.custom_title' => 'nullable|string',
             'products.*.custom_description' => 'nullable|string',
-            'products.*.custom_price' => 'nullable|numeric'
+            'products.*.custom_price' => 'nullable|numeric',
+            'show_price' => 'nullable|boolean'
         ]);
 
         $userId = Auth::id() ?? 1;
@@ -242,7 +250,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
                 'catalogue_id' => $catalogue->id,
                 'version_no' => $latestVersionNo + 1,
                 'parent_version_id' => $catalogue->current_version_id,
-                'user_id' => $userId
+                'user_id' => $userId,
+                'show_price' => $request->has('show_price') ? $request->boolean('show_price') : true
             ]);
 
             foreach ($request->products as $prod) {
@@ -302,7 +311,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
             return response()->json([
                 'message' => 'Loaded to draft successfully',
                 'catalogue_name' => $catalogue->name,
-                'customer_id' => $catalogue->customer_id
+                'customer_id' => $catalogue->customer_id,
+                'show_price' => $latestVersion ? $latestVersion->show_price : true
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -310,7 +320,7 @@ class CatalogueManagerController extends Controller implements HasMiddleware
         }
     }
 
-    public function saveDraftAsVersion($id)
+    public function saveDraftAsVersion(Request $request, $id)
     {
         $userId = Auth::id() ?? 1;
         $catalogue = Catalogue::findOrFail($id);
@@ -329,7 +339,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
                 'catalogue_id' => $catalogue->id,
                 'version_no' => $latestVersionNo + 1,
                 'parent_version_id' => $catalogue->current_version_id,
-                'user_id' => $userId
+                'user_id' => $userId,
+                'show_price' => $request->has('show_price') ? $request->boolean('show_price') : true
             ]);
 
             foreach ($cartItems as $item) {
@@ -386,7 +397,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
                 'catalogue_id' => $newCatalogue->id,
                 'version_no' => 1,
                 'parent_version_id' => $sourceVersion->id, // Track lineage
-                'user_id' => $userId
+                'user_id' => $userId,
+                'show_price' => $sourceVersion->show_price
             ]);
 
             foreach ($sourceVersion->versionProducts as $prod) {
@@ -453,7 +465,8 @@ class CatalogueManagerController extends Controller implements HasMiddleware
         
         $catalogue->setRelation('products', $products);
         $catalogue->name = $catalogue->name . ' (v' . $version->version_no . ')';
-        // You can add logic for 'show_price' based on your requirements if you saved it in the catalogue model
+        // Pass show_price directly to the catalogue for the PDF view
+        $catalogue->show_price = $version->show_price;
 
         $pdf = Pdf::loadView('pdf.catalogue', ['catalogue' => $catalogue]);
         

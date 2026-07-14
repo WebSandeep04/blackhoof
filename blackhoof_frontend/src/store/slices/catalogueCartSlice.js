@@ -56,11 +56,22 @@ export const clearCartAsync = createAsyncThunk(
     }
 );
 
+const loadEditingState = () => {
+    try {
+        const stored = localStorage.getItem('cartEditingState');
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+};
+const storedEditingState = loadEditingState();
+
 const initialState = {
     cartItems: [],
-    editingCatalogueId: null,
-    cartName: null,
-    cartCustomerId: null,
+    editingCatalogueId: storedEditingState?.editingCatalogueId || null,
+    cartName: storedEditingState?.cartName || null,
+    cartCustomerId: storedEditingState?.cartCustomerId || null,
+    cartShowPrice: storedEditingState?.cartShowPrice ?? true,
     loading: false,
     error: null,
 };
@@ -73,6 +84,24 @@ const catalogueCartSlice = createSlice({
             state.editingCatalogueId = action.payload.id;
             state.cartName = action.payload.name;
             state.cartCustomerId = action.payload.customerId;
+            state.cartShowPrice = action.payload.showPrice ?? true;
+            localStorage.setItem('cartEditingState', JSON.stringify({
+                editingCatalogueId: action.payload.id,
+                cartName: action.payload.name,
+                cartCustomerId: action.payload.customerId,
+                cartShowPrice: action.payload.showPrice ?? true
+            }));
+        },
+        setCartShowPrice: (state, action) => {
+            state.cartShowPrice = action.payload;
+            const stored = localStorage.getItem('cartEditingState');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                parsed.cartShowPrice = action.payload;
+                localStorage.setItem('cartEditingState', JSON.stringify(parsed));
+            } else {
+                localStorage.setItem('cartEditingState', JSON.stringify({ cartShowPrice: action.payload }));
+            }
         }
     },
     extraReducers: (builder) => {
@@ -109,9 +138,11 @@ const catalogueCartSlice = createSlice({
                 state.editingCatalogueId = null;
                 state.cartName = null;
                 state.cartCustomerId = null;
+                state.cartShowPrice = true;
+                localStorage.removeItem('cartEditingState');
             });
     }
 });
 
-export const { setEditingCatalogue } = catalogueCartSlice.actions;
+export const { setEditingCatalogue, setCartShowPrice } = catalogueCartSlice.actions;
 export default catalogueCartSlice.reducer;

@@ -110,7 +110,8 @@ export default function AdminCatalogue() {
             dispatch(setEditingCatalogue({ 
                 id: catalogue.id, 
                 name: res.data.catalogue_name, 
-                customerId: res.data.customer_id 
+                customerId: res.data.customer_id,
+                showPrice: res.data.show_price
             }));
             dispatch(fetchCartAsync());
             navigate('/admin/catalogue/preview');

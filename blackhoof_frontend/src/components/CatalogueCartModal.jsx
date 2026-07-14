@@ -8,10 +8,11 @@ import api from '../api/axios';
 export default function CatalogueCartModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
-    const { cartName, editingCatalogueId, cartCustomerId } = useSelector(state => state.catalogueCart);
+    const { cartName, editingCatalogueId, cartCustomerId, cartShowPrice } = useSelector(state => state.catalogueCart);
     const { allCustomers } = useSelector(state => state.customers);
     const [catalogueName, setCatalogueName] = useState('');
     const [customerId, setCustomerId] = useState('');
+    const [showPrice, setShowPrice] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [saveAsNew, setSaveAsNew] = useState(false);
     
@@ -22,13 +23,15 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         if (isOpen && cartName) {
             setCatalogueName(cartName);
             if (cartCustomerId) setCustomerId(cartCustomerId);
+            setShowPrice(cartShowPrice);
             setSaveAsNew(false);
         } else if (isOpen && !cartName) {
             setCatalogueName('');
             setCustomerId('');
+            setShowPrice(cartShowPrice);
             setSaveAsNew(false);
         }
-    }, [isOpen, cartName, cartCustomerId, dispatch]);
+    }, [isOpen, cartName, cartCustomerId, cartShowPrice, dispatch]);
 
     if (!isOpen) return null;
 
@@ -43,13 +46,16 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
 
             if (editingCatalogueId && !saveAsNew) {
                 // Save draft as new version
-                const response = await api.post(`/catalogues/${editingCatalogueId}/save-draft-as-version`);
+                const response = await api.post(`/catalogues/${editingCatalogueId}/save-draft-as-version`, {
+                    show_price: showPrice
+                });
                 catalogueId = response.data.catalogue_id;
             } else {
                 // Generate completely new catalogue
                 const response = await api.post('/catalogues/generate', { 
                     name: catalogueName,
-                    customer_id: customerId
+                    customer_id: customerId,
+                    show_price: showPrice
                 });
                 catalogueId = response.data.catalogue_id;
             }
@@ -176,6 +182,19 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                         <p className="text-xs text-gray-500 mt-2">The selected customer's name will appear on the cover of the generated PDF.</p>
                                     </div>
                                 )}
+
+                                <div className="mb-6 flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="showPrice"
+                                        checked={showPrice}
+                                        onChange={(e) => setShowPrice(e.target.checked)}
+                                        className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                                    />
+                                    <label htmlFor="showPrice" className="text-sm font-medium text-gray-700">
+                                        Show Product Prices in PDF
+                                    </label>
+                                </div>
 
                                 <button
                                     type="submit"

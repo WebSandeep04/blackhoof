@@ -10,7 +10,12 @@ class CatalogueVersion extends Model
         'catalogue_id',
         'version_no',
         'parent_version_id',
-        'user_id'
+        'user_id',
+        'show_price'
+    ];
+
+    protected $casts = [
+        'show_price' => 'boolean',
     ];
 
     public function catalogue()

@@ -42,6 +42,28 @@ export default function CataloguePreview() {
         return () => clearTimeout(delayDebounceFn);
     }, [selectedCategory, selectedAttributes, searchQuery, dispatch]);
 
+    // Initialize selected variants based on cart items
+    useEffect(() => {
+        if (products.length > 0 && cartItems.length > 0) {
+            setSelectedVariants(prev => {
+                const newSelected = { ...prev };
+                let hasChanges = false;
+                
+                products.forEach(product => {
+                    if (newSelected[product.id] === undefined) {
+                        const cartItem = cartItems.find(item => item.id === product.id && item.cart_variant_id);
+                        if (cartItem) {
+                            newSelected[product.id] = cartItem.cart_variant_id;
+                            hasChanges = true;
+                        }
+                    }
+                });
+                
+                return hasChanges ? newSelected : prev;
+            });
+        }
+    }, [products, cartItems]);
+
     const handleCategoryChange = (categoryId) => {
         setSelectedCategory(categoryId === selectedCategory ? '' : categoryId);
     };
