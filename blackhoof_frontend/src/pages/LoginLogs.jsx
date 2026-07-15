@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchLoginLogs } from '../store/slices/loginLogsSlice';
 import DataTable from '../components/DataTable';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Download, Shield } from 'lucide-react';
 
-export default function LoginLogs() {
+export default function LoginLogs({ isTab = false }) {
     const dispatch = useDispatch();
     const { user: authUser } = useSelector(state => state.auth);
     const { logs, pagination, loading } = useSelector(state => state.loginLogs);
@@ -52,7 +52,21 @@ export default function LoginLogs() {
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className={isTab ? "space-y-6 animate-fade-in" : "max-w-7xl mx-auto space-y-6 animate-fade-in"}>
+            {!isTab && (
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-light/20 rounded-lg">
+                            <Shield className="w-6 h-6 text-brand-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Login Logs</h1>
+                            <p className="text-sm text-gray-500">Track user logins and login trails</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex justify-end items-center flex-wrap gap-4 w-full">
                     <div className="flex gap-2 items-center">

@@ -21,8 +21,7 @@ import Countries from './pages/Countries';
 import Customers from './pages/Customers';
 import Inqueries from './pages/Inqueries';
 import InquiryStatus from './pages/InquiryStatus';
-import LoginLogs from './pages/LoginLogs';
-import AuditLogs from './pages/AuditLogs';
+import SystemLogs from './pages/SystemLogs';
 
 import CataloguePreview from './pages/CataloguePreview';
 
@@ -62,8 +61,7 @@ function App() {
             <Route path="testimonials/edit/:id" element={<TestimonialForm />} />
             <Route path="inqueries" element={<Inqueries />} />
             <Route path="inquiry-statuses" element={<InquiryStatus />} />
-            <Route path="login-logs" element={<LoginLogs />} />
-            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="logs" element={<SystemLogs />} />
           </Route>
 
           {/* Default Route */}

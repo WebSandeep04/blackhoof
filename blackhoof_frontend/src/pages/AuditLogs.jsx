@@ -3,7 +3,7 @@ import api from '../api/axios';
 import DataTable from '../components/DataTable';
 import { History, Search, X } from 'lucide-react';
 
-export default function AuditLogs() {
+export default function AuditLogs({ isTab = false }) {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -168,20 +168,22 @@ export default function AuditLogs() {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-brand-light/20 rounded-lg">
-                        <History className="w-6 h-6 text-brand-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-                        <p className="text-sm text-gray-500">Track all changes made to products and other resources</p>
+        <div className={isTab ? "space-y-6" : "max-w-7xl mx-auto space-y-6"}>
+            {!isTab && (
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-light/20 rounded-lg">
+                            <History className="w-6 h-6 text-brand-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
+                            <p className="text-sm text-gray-500">Track all changes made to products and other resources</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <DataTable
                     columns={columns}
                     data={logs}
