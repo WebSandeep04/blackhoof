@@ -24,6 +24,12 @@ class LogController extends Controller
             $query->where('subject_id', $request->input('subject_id'));
         }
 
+        // Fetch variant logs for a specific product
+        if ($request->has('variant_product_id')) {
+            $query->where('subject_type', \App\Models\ProductVariant::class)
+                  ->where('properties->product_id', $request->input('variant_product_id'));
+        }
+
         $logs = $query->paginate(20);
 
         return response()->json([

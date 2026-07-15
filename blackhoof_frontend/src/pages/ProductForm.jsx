@@ -30,9 +30,11 @@ export default function ProductForm() {
     
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState([]);
+    const [variantLogs, setVariantLogs] = useState([]);
     const [auditModalOpen, setAuditModalOpen] = useState(false);
     const [auditModalTitle, setAuditModalTitle] = useState('');
     const [auditModalFields, setAuditModalFields] = useState([]);
+    const [auditModalLogs, setAuditModalLogs] = useState([]);
     
     // Form State
     const [name, setName] = useState('');
@@ -70,6 +72,11 @@ export default function ProductForm() {
             api.get(`/audit-logs?subject_type=App\\Models\\Product&subject_id=${id}`)
                 .then(res => setAuditLogs(res.data.data.data || []))
                 .catch(err => console.error("Error fetching audit logs", err));
+                
+            // Fetch audit logs for product variants
+            api.get(`/audit-logs?variant_product_id=${id}`)
+                .then(res => setVariantLogs(res.data.data.data || []))
+                .catch(err => console.error("Error fetching variant logs", err));
         } else {
             dispatch(clearCurrentProduct());
         }
@@ -79,9 +86,10 @@ export default function ProductForm() {
         };
     }, [dispatch, id, isEditMode]);
 
-    const openAuditModal = (title, fields) => {
+    const openAuditModal = (title, fields, logsToUse = auditLogs) => {
         setAuditModalTitle(title);
         setAuditModalFields(fields);
+        setAuditModalLogs(logsToUse);
         setAuditModalOpen(true);
     };
 
@@ -508,6 +516,16 @@ export default function ProductForm() {
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
                         <div className="flex items-center justify-between border-b pb-2">
                             <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
+                            {isEditMode && (
+                                <button 
+                                    type="button"
+                                    onClick={() => openAuditModal('Inventory & Variations', ['sku', 'price', 'stock_quantity'], variantLogs)}
+                                    className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                    title="View History"
+                                >
+                                    <Info className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Variable Product Matrix Builder */}
@@ -832,7 +850,7 @@ export default function ProductForm() {
                 onClose={() => setAuditModalOpen(false)}
                 title={auditModalTitle}
                 fields={auditModalFields}
-                logs={auditLogs}
+                logs={auditModalLogs}
             />
         </div>
     );

@@ -28,6 +28,7 @@ class Product extends Model
         'is_active',
         'is_trending',
         'is_top_seller',
+        'include_in_catalogue',
         'show_on_website',
         'ready_to_publish',
         'product_for',
@@ -37,6 +38,7 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_trending' => 'boolean',
         'is_top_seller' => 'boolean',
+        'include_in_catalogue' => 'boolean',
         'show_on_website' => 'boolean',
         'ready_to_publish' => 'boolean',
     ];
