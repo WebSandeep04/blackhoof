@@ -14,16 +14,13 @@ export default function CataloguePreview() {
     const { flatCategories } = useSelector(state => state.categories);
     const { flatAttributes } = useSelector(state => state.attributes);
     const cartItems = useSelector(state => state.catalogueCart.cartItems);
-    
+
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedAttributes, setSelectedAttributes] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     const [loadingProductId, setLoadingProductId] = useState(null);
     const [selectedVariants, setSelectedVariants] = useState({});
-    
-    // For expanding/collapsing parent categories in UI
-    const [expandedCategories, setExpandedCategories] = useState({});
 
     useEffect(() => {
         dispatch(fetchCategories({ all: true }));
@@ -32,8 +29,8 @@ export default function CataloguePreview() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            dispatch(fetchCatalogue({ 
-                category_id: selectedCategory, 
+            dispatch(fetchCatalogue({
+                category_id: selectedCategory,
                 attributes: selectedAttributes,
                 search: searchQuery
             }));
@@ -47,7 +44,7 @@ export default function CataloguePreview() {
             setSelectedVariants(prev => {
                 const newSelected = { ...prev };
                 let hasChanges = false;
-                
+
                 products.forEach(product => {
                     if (newSelected[product.id] === undefined) {
                         const cartItem = cartItems.find(item => item.id === product.id && item.cart_variant_id);
@@ -57,7 +54,7 @@ export default function CataloguePreview() {
                         }
                     }
                 });
-                
+
                 return hasChanges ? newSelected : prev;
             });
         }
@@ -65,13 +62,6 @@ export default function CataloguePreview() {
 
     const handleCategoryChange = (categoryId) => {
         setSelectedCategory(categoryId === selectedCategory ? '' : categoryId);
-    };
-
-    const toggleCategoryExpand = (categoryId) => {
-        setExpandedCategories(prev => ({
-            ...prev,
-            [categoryId]: !prev[categoryId]
-        }));
     };
 
     const handleAttributeChange = (valueId) => {
@@ -102,9 +92,6 @@ export default function CataloguePreview() {
         setTimeout(() => setLoadingProductId(null), 200);
     };
 
-    // Category Hierarchy Helpers
-    const parentCategories = flatCategories.filter(c => !c.parent_id);
-    const getChildren = (parentId) => flatCategories.filter(c => c.parent_id === parentId);
 
     return (
         <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 bg-gray-50">
@@ -122,13 +109,13 @@ export default function CataloguePreview() {
                         <p className="text-sm text-gray-500">Preview how your catalogue appears to customers.</p>
                     </div>
                 </div>
-                
+
                 {/* Search Bar */}
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-4 w-4 text-gray-400" />
                     </div>
-                    <input 
+                    <input
                         type="text"
                         placeholder="Search products..."
                         value={searchQuery}
@@ -161,58 +148,47 @@ export default function CataloguePreview() {
                     <div className="mb-8">
                         <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">Categories</h3>
                         <div className="space-y-1">
-                            {parentCategories.map((parent) => {
-                                const children = getChildren(parent.id);
-                                const hasChildren = children.length > 0;
-                                const isExpanded = expandedCategories[parent.id];
+                            {(() => {
+                                const buildTree = (cats, parentId = null) => {
+                                    return cats
+                                        .filter(c => c.parent_id === parentId)
+                                        .map(c => ({ ...c, children: buildTree(cats, c.id) }));
+                                };
 
-                                return (
-                                    <div key={parent.id} className="flex flex-col">
-                                        <div className="flex items-center group py-1">
-                                            {hasChildren ? (
-                                                <button 
-                                                    onClick={() => toggleCategoryExpand(parent.id)}
-                                                    className="p-0.5 mr-1 text-gray-400 hover:text-brand-primary"
-                                                >
-                                                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                                </button>
-                                            ) : (
-                                                <div className="w-5 mr-1" /> // Spacer for alignment
-                                            )}
-                                            <label className="flex items-center cursor-pointer flex-1">
+                                const isSelectedOrAncestor = (cat, selectedId) => {
+                                    if (cat.id === selectedId) return true;
+                                    if (cat.children && cat.children.length > 0) {
+                                        return cat.children.some(child => isSelectedOrAncestor(child, selectedId));
+                                    }
+                                    return false;
+                                };
+
+                                const renderTreeOptions = (cats, level = 0) => {
+                                    return cats.map(cat => (
+                                        <div key={cat.id} className="flex flex-col">
+                                            <label className={`flex items-center group py-1.5 px-2 cursor-pointer rounded transition hover:bg-gray-50 ${selectedCategory === cat.id ? 'bg-brand-primary/5 text-brand-primary font-medium' : 'text-gray-700'}`} style={{ marginLeft: `${level * 1.5}rem` }}>
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedCategory === parent.id}
-                                                    onChange={() => handleCategoryChange(parent.id)}
-                                                    className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary cursor-pointer"
+                                                    checked={selectedCategory === cat.id}
+                                                    onChange={() => handleCategoryChange(cat.id)}
+                                                    className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary cursor-pointer shrink-0"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700 font-medium group-hover:text-brand-primary transition-colors line-clamp-1">
-                                                    {parent.name}
+                                                <span className="ml-2 text-sm group-hover:text-brand-primary transition-colors line-clamp-1">
+                                                    {cat.name}
                                                 </span>
                                             </label>
+
+                                            {cat.children && cat.children.length > 0 && isSelectedOrAncestor(cat, selectedCategory) && (
+                                                <div className="flex flex-col relative before:absolute before:left-[1rem] before:top-0 before:bottom-0 before:w-px before:bg-gray-200">
+                                                    {renderTreeOptions(cat.children, level + 1)}
+                                                </div>
+                                            )}
                                         </div>
-                                        
-                                        {/* Render Children if expanded */}
-                                        {hasChildren && isExpanded && (
-                                            <div className="ml-6 space-y-1 mt-1 border-l border-gray-200 pl-2">
-                                                {children.map(child => (
-                                                    <label key={child.id} className="flex items-center cursor-pointer group py-1">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedCategory === child.id}
-                                                            onChange={() => handleCategoryChange(child.id)}
-                                                            className="w-3.5 h-3.5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary cursor-pointer"
-                                                        />
-                                                        <span className="ml-2 text-sm text-gray-600 group-hover:text-brand-primary transition-colors line-clamp-1">
-                                                            {child.name}
-                                                        </span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                    ));
+                                };
+
+                                return renderTreeOptions(buildTree(flatCategories));
+                            })()}
                             {flatCategories.length === 0 && (
                                 <p className="text-sm text-gray-400 italic">No categories available.</p>
                             )}
@@ -260,7 +236,7 @@ export default function CataloguePreview() {
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">No products found</h3>
                                 <p className="text-gray-500 mb-6">There are no products matching your current filters.</p>
                                 {(selectedCategory || selectedAttributes.length > 0) && (
-                                    <button 
+                                    <button
                                         onClick={() => { setSelectedCategory(''); setSelectedAttributes([]); }}
                                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
                                     >
@@ -281,9 +257,9 @@ export default function CataloguePreview() {
                                     <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col h-full">
                                         <div className="relative aspect-square overflow-hidden bg-gray-100 shrink-0">
                                             {imageUrl ? (
-                                                <img 
-                                                    src={imageUrl} 
-                                                    alt={product.name} 
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={product.name}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
                                             ) : (
@@ -306,7 +282,7 @@ export default function CataloguePreview() {
                                             <p className="text-sm text-gray-500 mb-3 capitalize">
                                                 {product.product_for}
                                             </p>
-                                            
+
                                             <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
                                                 <p className="text-brand-primary font-black text-lg">
                                                     ${defaultPrice}
@@ -317,11 +293,11 @@ export default function CataloguePreview() {
                                                     </span>
                                                 )}
                                             </div>
-                                            
+
                                             {/* Variant Selector */}
                                             {product.variants?.length > 0 && (
                                                 <div className="mt-3 mb-2">
-                                                    <select 
+                                                    <select
                                                         className="w-full p-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-brand-primary bg-white truncate"
                                                         value={selectedVariants[product.id] || ''}
                                                         onChange={(e) => handleVariantChange(product.id, e.target.value)}
@@ -333,11 +309,11 @@ export default function CataloguePreview() {
                                                     </select>
                                                 </div>
                                             )}
-                                            
+
                                             {/* Add to Cart Button */}
                                             <div className="mt-auto">
                                                 {cartItems.some(item => item.id === product.id && item.cart_variant_id == (selectedVariants[product.id] || null)) ? (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleRemoveFromCart(product.id, selectedVariants[product.id] || null)}
                                                         disabled={loadingProductId === product.id}
                                                         className="w-full py-2 px-2 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-75 disabled:cursor-wait"
@@ -350,7 +326,7 @@ export default function CataloguePreview() {
                                                         <span className="truncate">{loadingProductId === product.id ? 'Removing...' : 'Added'}</span>
                                                     </button>
                                                 ) : (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleAddToCart(product)}
                                                         disabled={loadingProductId === product.id}
                                                         className="w-full py-2 px-2 flex items-center justify-center gap-1.5 bg-brand-light text-brand-primary text-sm font-medium rounded-lg hover:bg-brand-primary hover:text-white transition disabled:opacity-75 disabled:cursor-wait group-[.hover]:hover:bg-brand-primary"
@@ -372,7 +348,7 @@ export default function CataloguePreview() {
                     )}
                 </main>
             </div>
-            
+
             {/* Floating Cart Button */}
             {cartItems.length > 0 && (
                 <button
@@ -392,9 +368,9 @@ export default function CataloguePreview() {
             )}
 
             {/* Cart Modal */}
-            <CatalogueCartModal 
-                isOpen={isCartModalOpen} 
-                onClose={() => setIsCartModalOpen(false)} 
+            <CatalogueCartModal
+                isOpen={isCartModalOpen}
+                onClose={() => setIsCartModalOpen(false)}
             />
         </div>
     );
