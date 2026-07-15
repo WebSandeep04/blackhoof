@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { removeFromCartAsync, clearCartAsync } from '../store/slices/catalogueCartSlice';
+import { removeFromCart, clearCart } from '../store/slices/catalogueCartSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { X, FileText, Trash2, Download } from 'lucide-react';
 import api from '../api/axios';
@@ -44,10 +44,17 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
         try {
             let catalogueId;
 
+            const productsPayload = cartItems.map((item, index) => ({
+                product_id: item.id,
+                product_variant_id: item.cart_variant_id,
+                sort_order: item.sort_order || (index + 1)
+            }));
+
             if (editingCatalogueId && !saveAsNew) {
                 // Save draft as new version
                 const response = await api.post(`/catalogues/${editingCatalogueId}/save-draft-as-version`, {
-                    show_price: showPrice
+                    show_price: showPrice,
+                    products: productsPayload
                 });
                 catalogueId = response.data.catalogue_id;
             } else {
@@ -55,7 +62,8 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                 const response = await api.post('/catalogues/generate', { 
                     name: catalogueName,
                     customer_id: customerId,
-                    show_price: showPrice
+                    show_price: showPrice,
+                    products: productsPayload
                 });
                 catalogueId = response.data.catalogue_id;
             }
@@ -65,7 +73,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
             window.open(`http://localhost:8000/api/catalogues/${catalogueId}/download`, '_blank');
             
             setIsGenerating(false);
-            dispatch(clearCartAsync());
+            dispatch(clearCart());
             onClose();
         } catch (error) {
             console.error("Failed to generate PDF", error);
@@ -96,7 +104,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wider">Selected Products ({cartItems.length})</h3>
-                                <button onClick={() => dispatch(clearCartAsync())} className="text-xs text-red-500 hover:underline">Clear All</button>
+                                <button onClick={() => dispatch(clearCart())} className="text-xs text-red-500 hover:underline">Clear All</button>
                             </div>
                             <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-brand">
                                 {cartItems.map((item) => {
@@ -124,7 +132,7 @@ export default function CatalogueCartModal({ isOpen, onClose }) {
                                                 )}
                                             </div>
                                             <button 
-                                                onClick={() => dispatch(removeFromCartAsync({ productId: item.id, variantId: item.cart_variant_id }))}
+                                                onClick={() => dispatch(removeFromCart({ productId: item.id, variantId: item.cart_variant_id }))}
                                                 className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition self-center"
                                             >
                                                 <Trash2 className="w-4 h-4" />

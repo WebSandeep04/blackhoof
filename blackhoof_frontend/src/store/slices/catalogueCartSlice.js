@@ -1,60 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axios';
 
-export const fetchCartAsync = createAsyncThunk(
-    'catalogueCart/fetchCart',
-    async (_, { rejectWithValue }) => {
-        try {
-            const response = await api.get('/cart');
-            return {
-                items: (response.data.cart || []).map(item => ({
-                    ...item.product,
-                    cart_variant_id: item.product_variant_id || null,
-                    sort_order: item.sort_order,
-                    cart_item_id: item.id
-                }))
-            };
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to fetch cart');
-        }
-    }
-);
-
-export const addToCartAsync = createAsyncThunk(
-    'catalogueCart/addToCart',
-    async ({ product, variantId }, { rejectWithValue }) => {
-        try {
-            await api.post('/cart/add', { product_id: product.id, product_variant_id: variantId });
-            return { product, variantId };
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to add to cart');
-        }
-    }
-);
-
-export const removeFromCartAsync = createAsyncThunk(
-    'catalogueCart/removeFromCart',
-    async ({ productId, variantId }, { rejectWithValue }) => {
-        try {
-            await api.post('/cart/remove', { product_id: productId, product_variant_id: variantId });
-            return { productId, variantId };
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to remove from cart');
-        }
-    }
-);
-
-export const clearCartAsync = createAsyncThunk(
-    'catalogueCart/clearCart',
-    async (_, { rejectWithValue }) => {
-        try {
-            await api.post('/cart/clear');
-            return true;
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to clear cart');
-        }
-    }
-);
+// Removed async thunks
 
 const loadEditingState = () => {
     try {
@@ -80,6 +27,35 @@ const catalogueCartSlice = createSlice({
     name: 'catalogueCart',
     initialState,
     reducers: {
+        setCartItems: (state, action) => {
+            state.cartItems = action.payload;
+        },
+        addToCart: (state, action) => {
+            const { product, variantId } = action.payload;
+            const exists = state.cartItems.find(item => item.id === product.id && item.cart_variant_id == variantId);
+            if (!exists) {
+                state.cartItems.push({ 
+                    ...product, 
+                    cart_variant_id: variantId || null,
+                    sort_order: state.cartItems.length > 0 ? Math.max(...state.cartItems.map(i => i.sort_order || 0)) + 1 : 1
+                });
+            }
+        },
+        removeFromCart: (state, action) => {
+            const { productId, variantId } = action.payload;
+            state.cartItems = state.cartItems.filter(item => !(item.id === productId && item.cart_variant_id == variantId));
+        },
+        clearCart: (state) => {
+            state.cartItems = [];
+            state.editingCatalogueId = null;
+            state.cartName = null;
+            state.cartCustomerId = null;
+            state.cartShowPrice = true;
+            localStorage.removeItem('cartEditingState');
+        },
+        reorderCart: (state, action) => {
+            state.cartItems = action.payload;
+        },
         setEditingCatalogue: (state, action) => {
             state.editingCatalogueId = action.payload.id;
             state.cartName = action.payload.name;
@@ -103,46 +79,8 @@ const catalogueCartSlice = createSlice({
                 localStorage.setItem('cartEditingState', JSON.stringify({ cartShowPrice: action.payload }));
             }
         }
-    },
-    extraReducers: (builder) => {
-        builder
-            // Fetch Cart
-            .addCase(fetchCartAsync.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchCartAsync.fulfilled, (state, action) => {
-                state.loading = false;
-                state.cartItems = action.payload.items;
-            })
-            .addCase(fetchCartAsync.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
-            // Add to Cart
-            .addCase(addToCartAsync.fulfilled, (state, action) => {
-                const { product, variantId } = action.payload;
-                const exists = state.cartItems.find(item => item.id === product.id && item.cart_variant_id === variantId);
-                if (!exists) {
-                    state.cartItems.push({ ...product, cart_variant_id: variantId });
-                }
-            })
-            // Remove from Cart
-            .addCase(removeFromCartAsync.fulfilled, (state, action) => {
-                const { productId, variantId } = action.payload;
-                state.cartItems = state.cartItems.filter(item => !(item.id === productId && item.cart_variant_id === variantId));
-            })
-            // Clear Cart
-            .addCase(clearCartAsync.fulfilled, (state) => {
-                state.cartItems = [];
-                state.editingCatalogueId = null;
-                state.cartName = null;
-                state.cartCustomerId = null;
-                state.cartShowPrice = true;
-                localStorage.removeItem('cartEditingState');
-            });
     }
 });
 
-export const { setEditingCatalogue, setCartShowPrice } = catalogueCartSlice.actions;
+export const { setCartItems, addToCart, removeFromCart, clearCart, reorderCart, setEditingCatalogue, setCartShowPrice } = catalogueCartSlice.actions;
 export default catalogueCartSlice.reducer;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSavedCatalogues, deleteSavedCatalogue, fetchCatalogueVersions } from '../store/slices/savedCataloguesSlice';
 import { fetchCountries } from '../store/slices/countriesSlice';
-import { clearCartAsync, fetchCartAsync, setEditingCatalogue } from '../store/slices/catalogueCartSlice';
+import { clearCart, setCartItems, setEditingCatalogue } from '../store/slices/catalogueCartSlice';
 import api from '../api/axios';
 import { FileText, Download, Trash2, Eye, X, Package, Search, LayoutGrid, Plus, Edit2, History, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ export default function AdminCatalogue() {
     const { catalogues, pagination, loading: cataloguesLoading } = useSelector((state) => state.savedCatalogues);
     const { user: authUser } = useSelector(state => state.auth);
     const { allCountries } = useSelector(state => state.countries);
+    const cartItems = useSelector(state => state.catalogueCart.cartItems);
     const loading = cataloguesLoading;
 
     const hasPermission = (permission) => authUser?.permissions?.includes(permission);
@@ -106,14 +107,21 @@ export default function AdminCatalogue() {
 
     const handleEdit = async (catalogue) => {
         try {
-            const res = await api.post(`/catalogues/${catalogue.id}/load-to-draft`);
+            const res = await api.post(`/catalogues/${catalogue.id}/load-for-edit`);
             dispatch(setEditingCatalogue({ 
                 id: catalogue.id, 
                 name: res.data.catalogue_name, 
                 customerId: res.data.customer_id,
                 showPrice: res.data.show_price
             }));
-            dispatch(fetchCartAsync());
+            
+            const mappedItems = (res.data.items || []).map(item => ({
+                ...item.product,
+                cart_variant_id: item.cart_variant_id,
+                sort_order: item.sort_order
+            }));
+            dispatch(setCartItems(mappedItems));
+            
             navigate('/admin/catalogue/preview');
         } catch (error) {
             Swal.fire('Error', 'Failed to load catalogue for editing', 'error');
@@ -122,9 +130,7 @@ export default function AdminCatalogue() {
 
     const handleCreateNew = async () => {
         try {
-            const cartResponse = await dispatch(fetchCartAsync()).unwrap();
-            
-            if (cartResponse.items && cartResponse.items.length > 0) {
+            if (cartItems && cartItems.length > 0) {
                 const result = await Swal.fire({
                     title: 'Active Draft Found',
                     text: "You have unsaved items in your cart. Would you like to resume your previous session or start a fresh catalogue?",
@@ -137,7 +143,7 @@ export default function AdminCatalogue() {
                 });
 
                 if (!result.isConfirmed && result.dismiss === Swal.DismissReason.cancel) {
-                    await dispatch(clearCartAsync()).unwrap();
+                    dispatch(clearCart());
                 }
             }
             navigate('/admin/catalogue/preview');

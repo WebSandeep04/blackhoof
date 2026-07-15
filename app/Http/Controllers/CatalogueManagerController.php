@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CatalogueCart;
 use App\Models\Catalogue;
 use App\Models\CatalogueVersion;
 use App\Models\Product;
@@ -26,96 +25,6 @@ class CatalogueManagerController extends Controller implements HasMiddleware
     }
 
     // ==========================================
-    // CART MANAGEMENT
-    // ==========================================
-
-    public function getCart()
-    {
-        $userId = Auth::id() ?? 1; // Fallback for dev
-
-        $cartItems = CatalogueCart::with(['product.images', 'product.category', 'product.variants', 'variant'])
-            ->where('user_id', $userId)
-            ->orderBy('sort_order')
-            ->get();
-
-        return response()->json(['cart' => $cartItems]);
-    }
-
-    public function addToCart(Request $request)
-    {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'product_variant_id' => 'nullable|exists:product_variants,id'
-        ]);
-
-        $userId = Auth::id() ?? 1;
-
-        $exists = CatalogueCart::where('user_id', $userId)
-            ->where('product_id', $request->product_id)
-            ->where('product_variant_id', $request->product_variant_id)
-            ->exists();
-
-        if (!$exists) {
-            $maxOrder = CatalogueCart::where('user_id', $userId)->max('sort_order') ?? 0;
-            
-            CatalogueCart::create([
-                'user_id' => $userId,
-                'product_id' => $request->product_id,
-                'product_variant_id' => $request->product_variant_id,
-                'sort_order' => $maxOrder + 1
-            ]);
-        }
-
-        return response()->json(['message' => 'Added to cart']);
-    }
-
-    public function removeFromCart(Request $request)
-    {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'product_variant_id' => 'nullable|exists:product_variants,id'
-        ]);
-
-        $userId = Auth::id() ?? 1;
-
-        CatalogueCart::where('user_id', $userId)
-            ->where('product_id', $request->product_id)
-            ->where('product_variant_id', $request->product_variant_id)
-            ->delete();
-
-        return response()->json(['message' => 'Removed from cart']);
-    }
-
-    public function clearCart()
-    {
-        $userId = Auth::id() ?? 1;
-        CatalogueCart::where('user_id', $userId)->delete();
-
-        return response()->json(['message' => 'Cart cleared']);
-    }
-
-    public function reorderCart(Request $request)
-    {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:catalogue_cart,id',
-            'items.*.sort_order' => 'required|integer'
-        ]);
-
-        $userId = Auth::id() ?? 1;
-
-        DB::transaction(function () use ($request, $userId) {
-            foreach ($request->items as $item) {
-                CatalogueCart::where('id', $item['id'])
-                    ->where('user_id', $userId)
-                    ->update(['sort_order' => $item['sort_order']]);
-            }
-        });
-
-        return response()->json(['message' => 'Cart reordered']);
-    }
-
-    // ==========================================
     // CATALOGUE GENERATION & MANAGEMENT
     // ==========================================
 
@@ -123,14 +32,18 @@ class CatalogueManagerController extends Controller implements HasMiddleware
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'customer_id' => 'nullable|exists:customers,id'
+            'customer_id' => 'nullable|exists:customers,id',
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.product_variant_id' => 'nullable|exists:product_variants,id',
+            'products.*.sort_order' => 'required|integer'
         ]);
 
         $userId = Auth::id() ?? 1;
 
-        $cartItems = CatalogueCart::where('user_id', $userId)->orderBy('sort_order')->get();
+        $cartItems = $request->products;
 
-        if ($cartItems->isEmpty()) {
+        if (empty($cartItems)) {
             return response()->json(['message' => 'Cart is empty'], 400);
         }
 
@@ -152,14 +65,14 @@ class CatalogueManagerController extends Controller implements HasMiddleware
 
             // 3. Attach Products to Version
             foreach ($cartItems as $item) {
-                $product = Product::find($item->product_id);
-                $variant = $item->product_variant_id ? ProductVariant::find($item->product_variant_id) : null;
+                $product = Product::find($item['product_id']);
+                $variant = isset($item['product_variant_id']) ? ProductVariant::find($item['product_variant_id']) : null;
                 $price = $variant ? $variant->price : ($product->variants->first()->price ?? 0);
 
                 $version->versionProducts()->create([
-                    'product_id' => $item->product_id,
-                    'product_variant_id' => $item->product_variant_id,
-                    'sort_order' => $item->sort_order,
+                    'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'sort_order' => $item['sort_order'],
                     'custom_title' => $product->name,
                     'custom_price' => $price
                 ]);
@@ -167,9 +80,6 @@ class CatalogueManagerController extends Controller implements HasMiddleware
 
             // 4. Update Catalogue Current Version
             $catalogue->update(['current_version_id' => $version->id]);
-
-            // 5. Clear Cart
-            CatalogueCart::where('user_id', $userId)->delete();
 
             DB::commit();
 
@@ -279,55 +189,58 @@ class CatalogueManagerController extends Controller implements HasMiddleware
         }
     }
 
-    public function loadToDraft($id)
+    public function loadForEdit($id)
     {
-        $userId = Auth::id() ?? 1;
         $catalogue = Catalogue::findOrFail($id);
         
-        DB::beginTransaction();
         try {
-            // Clear current cart
-            CatalogueCart::where('user_id', $userId)->delete();
-            
-            // Get latest version
-            $latestVersion = CatalogueVersion::with('versionProducts')
+            // Get latest version with products mapped similarly to getCart
+            $latestVersion = CatalogueVersion::with(['versionProducts.product.images', 'versionProducts.product.category', 'versionProducts.product.variants', 'versionProducts.variant'])
                 ->where('catalogue_id', $id)
                 ->orderBy('version_no', 'desc')
                 ->first();
                 
+            $items = [];
             if ($latestVersion) {
                 foreach ($latestVersion->versionProducts as $vp) {
-                    CatalogueCart::create([
-                        'user_id' => $userId,
+                    $items[] = [
+                        'id' => $vp->product_id, // we map product_id to id for frontend parity
                         'product_id' => $vp->product_id,
-                        'product_variant_id' => $vp->product_variant_id,
-                        'sort_order' => $vp->sort_order
-                    ]);
+                        'cart_variant_id' => $vp->product_variant_id,
+                        'sort_order' => $vp->sort_order,
+                        'product' => $vp->product,
+                        'variant' => $vp->variant,
+                    ];
                 }
             }
             
-            DB::commit();
-            
             return response()->json([
-                'message' => 'Loaded to draft successfully',
+                'message' => 'Loaded for edit successfully',
                 'catalogue_name' => $catalogue->name,
                 'customer_id' => $catalogue->customer_id,
-                'show_price' => $latestVersion ? $latestVersion->show_price : true
+                'show_price' => $latestVersion ? $latestVersion->show_price : true,
+                'items' => $items
             ]);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to load to draft', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to load for edit', 'error' => $e->getMessage()], 500);
         }
     }
 
     public function saveDraftAsVersion(Request $request, $id)
     {
+        $request->validate([
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.product_variant_id' => 'nullable|exists:product_variants,id',
+            'products.*.sort_order' => 'required|integer',
+        ]);
+
         $userId = Auth::id() ?? 1;
         $catalogue = Catalogue::findOrFail($id);
         
-        $cartItems = CatalogueCart::where('user_id', $userId)->orderBy('sort_order')->get();
+        $cartItems = $request->products;
 
-        if ($cartItems->isEmpty()) {
+        if (empty($cartItems)) {
             return response()->json(['message' => 'Cart is empty'], 400);
         }
 
@@ -344,23 +257,20 @@ class CatalogueManagerController extends Controller implements HasMiddleware
             ]);
 
             foreach ($cartItems as $item) {
-                $product = Product::find($item->product_id);
-                $variant = $item->product_variant_id ? ProductVariant::find($item->product_variant_id) : null;
+                $product = Product::find($item['product_id']);
+                $variant = isset($item['product_variant_id']) ? ProductVariant::find($item['product_variant_id']) : null;
                 $price = $variant ? $variant->price : ($product->variants->first()->price ?? 0);
 
                 $newVersion->versionProducts()->create([
-                    'product_id' => $item->product_id,
-                    'product_variant_id' => $item->product_variant_id,
-                    'sort_order' => $item->sort_order,
-                    'custom_title' => $product->name, // Keep base name for now since cart UI doesn't allow custom text
+                    'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'sort_order' => $item['sort_order'],
+                    'custom_title' => $product->name,
                     'custom_price' => $price
                 ]);
             }
 
             $catalogue->update(['current_version_id' => $newVersion->id]);
-            
-            // Clear Cart
-            CatalogueCart::where('user_id', $userId)->delete();
             
             DB::commit();
             

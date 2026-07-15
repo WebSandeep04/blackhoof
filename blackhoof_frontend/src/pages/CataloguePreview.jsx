@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCatalogue } from '../store/slices/catalogueSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
-import { addToCartAsync, removeFromCartAsync, fetchCartAsync } from '../store/slices/catalogueCartSlice';
+import { addToCart, removeFromCart } from '../store/slices/catalogueCartSlice';
 import { Filter, Store, ChevronLeft, ChevronRight, ChevronDown, ShoppingCart, Plus, Check, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CatalogueCartModal from '../components/CatalogueCartModal';
@@ -28,7 +28,6 @@ export default function CataloguePreview() {
     useEffect(() => {
         dispatch(fetchCategories({ all: true }));
         dispatch(fetchAttributes({ all: true }));
-        dispatch(fetchCartAsync());
     }, [dispatch]);
 
     useEffect(() => {
@@ -89,23 +88,18 @@ export default function CataloguePreview() {
         setSelectedVariants(prev => ({ ...prev, [productId]: variantId ? parseInt(variantId) : null }));
     };
 
-    const handleAddToCart = async (product) => {
+    const handleAddToCart = (product) => {
         setLoadingProductId(product.id);
         const variantId = selectedVariants[product.id] || null;
-        try {
-            await dispatch(addToCartAsync({ product, variantId })).unwrap();
-        } finally {
-            setLoadingProductId(null);
-        }
+        dispatch(addToCart({ product, variantId }));
+        // Simulated loading for UI consistency if desired, or remove loadingProductId entirely
+        setTimeout(() => setLoadingProductId(null), 200);
     };
 
-    const handleRemoveFromCart = async (productId, variantId = null) => {
+    const handleRemoveFromCart = (productId, variantId = null) => {
         setLoadingProductId(productId);
-        try {
-            await dispatch(removeFromCartAsync({ productId, variantId })).unwrap();
-        } finally {
-            setLoadingProductId(null);
-        }
+        dispatch(removeFromCart({ productId, variantId }));
+        setTimeout(() => setLoadingProductId(null), 200);
     };
 
     // Category Hierarchy Helpers

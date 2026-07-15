@@ -21,7 +21,7 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/forgot-password/reset', [AuthController::class, 'verifyOtpAndResetPassword']);
 Route::get('/catalogue', [CatalogueController::class, 'index']);
 Route::get('/catalogues/{id}/download', [CatalogueManagerController::class, 'download']);
-Route::post('/catalogues/{id}/load-to-draft', [CatalogueManagerController::class, 'loadToDraft']);
+Route::post('/catalogues/{id}/load-for-edit', [CatalogueManagerController::class, 'loadForEdit']);
 Route::post('/catalogues/{id}/save-draft-as-version', [CatalogueManagerController::class, 'saveDraftAsVersion']);
 Route::post('/inqueries', [\App\Http\Controllers\InqueryController::class, 'store']);
 
@@ -30,12 +30,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
-    // Cart Endpoints
-    Route::get('/cart', [CatalogueManagerController::class, 'getCart']);
-    Route::post('/cart/add', [CatalogueManagerController::class, 'addToCart']);
-    Route::post('/cart/remove', [CatalogueManagerController::class, 'removeFromCart']);
-    Route::post('/cart/clear', [CatalogueManagerController::class, 'clearCart']);
-    Route::post('/cart/reorder', [CatalogueManagerController::class, 'reorderCart']);
     Route::post('/catalogues/generate', [CatalogueManagerController::class, 'generate']);
 
     // Admin routes (Protected by Controller-level Spatie permissions)
