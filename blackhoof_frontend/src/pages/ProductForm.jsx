@@ -73,10 +73,10 @@ export default function ProductForm() {
                 .then(res => setAuditLogs(res.data.data.data || []))
                 .catch(err => console.error("Error fetching audit logs", err));
                 
-            // Fetch audit logs for product variants
-            api.get(`/audit-logs?variant_product_id=${id}`)
+            // Fetch audit logs for product variants and images
+            api.get(`/audit-logs?related_product_id=${id}`)
                 .then(res => setVariantLogs(res.data.data.data || []))
-                .catch(err => console.error("Error fetching variant logs", err));
+                .catch(err => console.error("Error fetching related logs", err));
         } else {
             dispatch(clearCurrentProduct());
         }
@@ -519,7 +519,7 @@ export default function ProductForm() {
                             {isEditMode && (
                                 <button 
                                     type="button"
-                                    onClick={() => openAuditModal('Inventory & Variations', ['sku', 'price', 'stock_quantity'], variantLogs)}
+                                    onClick={() => openAuditModal('Inventory & Variations', ['sku', 'price', 'stock_quantity', 'image_path', 'is_main', 'sort_order'], variantLogs)}
                                     className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
                                     title="View History"
                                 >

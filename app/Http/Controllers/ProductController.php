@@ -263,10 +263,17 @@ class ProductController extends Controller implements HasMiddleware
 
             $submittedVariantIds = collect($variantsData)->pluck('id')->filter()->toArray();
             
-            // 3. Prepare Existing Images
+            // 3. Prepare Existing Images & Delete Removed Images first
             $existingImageIds = [];
             if ($request->filled('existing_images')) {
                 $existingImageIds = json_decode($request->existing_images, true) ?? [];
+            }
+            
+            // Delete images that were removed by the user (do this BEFORE adding new ones so we don't accidentally delete fresh uploads)
+            $imagesToDelete = $product->images()->whereNotIn('id', $existingImageIds)->get();
+            foreach ($imagesToDelete as $img) {
+                Storage::disk('public')->delete($img->image_path);
+                $img->delete();
             }
             
             // Delete removed variants
@@ -350,16 +357,8 @@ class ProductController extends Controller implements HasMiddleware
                 }
             }
 
-            // 3. Handle Images
-            // First, remove images not in 'existing_images'
-            
-            $imagesToDelete = $product->images()->whereNotIn('id', $existingImageIds)->get();
-            foreach ($imagesToDelete as $img) {
-                Storage::disk('public')->delete($img->image_path);
-                $img->delete();
-            }
-
-            // Add new images
+            // 3. Handle New Main Images
+            // Add new general product images (if we have any, though currently images are mainly handled per variant)
             if ($request->hasFile('images')) {
                 // Get highest sort order
                 $maxSort = $product->images()->max('sort_order') ?? 0;
