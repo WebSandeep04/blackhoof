@@ -25,29 +25,7 @@ export const deleteSavedCatalogue = createAsyncThunk(
     }
 );
 
-export const saveNewVersionAsync = createAsyncThunk(
-    'savedCatalogues/saveNewVersion',
-    async ({ id, products }, { rejectWithValue }) => {
-        try {
-            const response = await api.post(`/catalogues/${id}/versions`, { products });
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to save new version');
-        }
-    }
-);
 
-export const fetchCatalogueVersion = createAsyncThunk(
-    'savedCatalogues/fetchVersion',
-    async ({ catalogueId, versionId }, { rejectWithValue }) => {
-        try {
-            const response = await api.get(`/catalogues/${catalogueId}/versions/${versionId}`);
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to fetch version');
-        }
-    }
-);
 
 export const fetchCatalogueVersions = createAsyncThunk(
     'savedCatalogues/fetchVersions',

@@ -123,71 +123,13 @@ class CatalogueManagerController extends Controller implements HasMiddleware
         return response()->json($versions);
     }
 
-    public function getVersion($catalogueId, $versionId)
-    {
-        $version = CatalogueVersion::with(['versionProducts.product', 'versionProducts.variant'])
-            ->where('catalogue_id', $catalogueId)
-            ->findOrFail($versionId);
-            
-        return response()->json($version);
-    }
+
 
     // ==========================================
     // VERSIONING & CLONING
     // ==========================================
 
-    public function saveNewVersion(Request $request, $id)
-    {
-        $request->validate([
-            'products' => 'required|array',
-            'products.*.product_id' => 'required|exists:products,id',
-            'products.*.product_variant_id' => 'nullable|exists:product_variants,id',
-            'products.*.sort_order' => 'required|integer',
-            'products.*.custom_title' => 'nullable|string',
-            'products.*.custom_description' => 'nullable|string',
-            'products.*.custom_price' => 'nullable|numeric',
-            'show_price' => 'nullable|boolean'
-        ]);
 
-        $userId = Auth::id() ?? 1;
-        $catalogue = Catalogue::findOrFail($id);
-        
-        DB::beginTransaction();
-        try {
-            $latestVersionNo = $catalogue->versions()->max('version_no') ?? 0;
-            
-            $newVersion = CatalogueVersion::create([
-                'catalogue_id' => $catalogue->id,
-                'version_no' => $latestVersionNo + 1,
-                'parent_version_id' => $catalogue->current_version_id,
-                'user_id' => $userId,
-                'show_price' => $request->has('show_price') ? $request->boolean('show_price') : true
-            ]);
-
-            foreach ($request->products as $prod) {
-                $newVersion->versionProducts()->create([
-                    'product_id' => $prod['product_id'],
-                    'product_variant_id' => $prod['product_variant_id'] ?? null,
-                    'sort_order' => $prod['sort_order'],
-                    'custom_title' => $prod['custom_title'] ?? null,
-                    'custom_description' => $prod['custom_description'] ?? null,
-                    'custom_price' => $prod['custom_price'] ?? null
-                ]);
-            }
-
-            $catalogue->update(['current_version_id' => $newVersion->id]);
-            
-            DB::commit();
-            
-            return response()->json([
-                'message' => 'New version saved successfully',
-                'version_id' => $newVersion->id
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to save new version', 'error' => $e->getMessage()], 500);
-        }
-    }
 
     public function loadForEdit($id)
     {
@@ -285,57 +227,7 @@ class CatalogueManagerController extends Controller implements HasMiddleware
         }
     }
 
-    public function cloneToNewClient(Request $request, $versionId)
-    {
-        $request->validate([
-            'new_catalogue_name' => 'required|string|max:255',
-            'customer_id' => 'nullable|exists:customers,id'
-        ]);
 
-        $userId = Auth::id() ?? 1;
-        $sourceVersion = CatalogueVersion::with('versionProducts')->findOrFail($versionId);
-
-        DB::beginTransaction();
-        try {
-            $newCatalogue = Catalogue::create([
-                'name' => $request->new_catalogue_name,
-                'customer_id' => $request->customer_id,
-                'user_id' => $userId
-            ]);
-
-            $newVersion = CatalogueVersion::create([
-                'catalogue_id' => $newCatalogue->id,
-                'version_no' => 1,
-                'parent_version_id' => $sourceVersion->id, // Track lineage
-                'user_id' => $userId,
-                'show_price' => $sourceVersion->show_price
-            ]);
-
-            foreach ($sourceVersion->versionProducts as $prod) {
-                $newVersion->versionProducts()->create([
-                    'product_id' => $prod->product_id,
-                    'product_variant_id' => $prod->product_variant_id,
-                    'sort_order' => $prod->sort_order,
-                    'custom_title' => $prod->custom_title,
-                    'custom_description' => $prod->custom_description,
-                    'custom_price' => $prod->custom_price
-                ]);
-            }
-
-            $newCatalogue->update(['current_version_id' => $newVersion->id]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Catalogue cloned successfully',
-                'catalogue_id' => $newCatalogue->id,
-                'version_id' => $newVersion->id
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to clone catalogue', 'error' => $e->getMessage()], 500);
-        }
-    }
 
     public function destroy($id)
     {

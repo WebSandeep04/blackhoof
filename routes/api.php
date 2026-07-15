@@ -53,9 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Catalogues management
     Route::get('catalogues', [CatalogueManagerController::class, 'index']);
     Route::get('catalogues/{id}/versions', [CatalogueManagerController::class, 'versions']);
-    Route::get('catalogues/{catalogueId}/versions/{versionId}', [CatalogueManagerController::class, 'getVersion']);
-    Route::post('catalogues/{id}/versions', [CatalogueManagerController::class, 'saveNewVersion']);
-    Route::post('catalogues/versions/{versionId}/clone', [CatalogueManagerController::class, 'cloneToNewClient']);
     Route::delete('catalogues/{id}', [CatalogueManagerController::class, 'destroy']);
     
     Route::get('permissions', function () {
