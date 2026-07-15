@@ -75,13 +75,19 @@ export default function ProductForm() {
             return;
         }
 
-        // Find the selected category in the flatCategories tree
-        // Since it's a tree in the state but maybe flat here?
-        // Wait, flatCategories is an array of all categories. We can just find it.
         const category = flatCategories.find(c => c.id == categoryId);
         if (category && category.attributes) {
             const mappedAttrIds = category.attributes.map(a => a.id);
-            setFilteredAttributes(flatAttributes.filter(a => mappedAttrIds.includes(a.id)));
+            const mappedValueIds = (category.attribute_values || []).map(v => v.id);
+            
+            const newFilteredAttributes = flatAttributes
+                .filter(a => mappedAttrIds.includes(a.id))
+                .map(a => ({
+                    ...a,
+                    values: (a.values || []).filter(v => mappedValueIds.includes(v.id))
+                }));
+                
+            setFilteredAttributes(newFilteredAttributes);
         } else {
             setFilteredAttributes([]);
         }
@@ -706,6 +712,14 @@ export default function ProductForm() {
                                                 .map(c => ({ ...c, children: buildTree(cats, c.id) }));
                                         };
                                         
+                                        const isSelectedOrAncestor = (cat, selectedId) => {
+                                            if (cat.id == selectedId) return true;
+                                            if (cat.children && cat.children.length > 0) {
+                                                return cat.children.some(child => isSelectedOrAncestor(child, selectedId));
+                                            }
+                                            return false;
+                                        };
+                                        
                                         const renderTreeOptions = (cats, level = 0) => {
                                             return cats.map(cat => (
                                                 <div key={cat.id} className="flex flex-col">
@@ -720,7 +734,7 @@ export default function ProductForm() {
                                                         />
                                                         <span className="text-sm">{cat.name}</span>
                                                     </label>
-                                                    {cat.children && cat.children.length > 0 && (
+                                                    {cat.children && cat.children.length > 0 && isSelectedOrAncestor(cat, categoryId) && (
                                                         <div className="flex flex-col relative before:absolute before:left-[0.6rem] before:top-0 before:bottom-0 before:w-px before:bg-gray-200">
                                                             {renderTreeOptions(cat.children, level + 1)}
                                                         </div>

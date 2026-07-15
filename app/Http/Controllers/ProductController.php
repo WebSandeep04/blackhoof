@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Category;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -118,7 +119,24 @@ class ProductController extends Controller implements HasMiddleware
                 throw new \Exception("Variants data is invalid or empty.");
             }
 
+            // Get valid attribute values for the category
+            $validAttributeValueIds = [];
+            if ($request->category_id) {
+                $category = Category::with('attributeValues')->find($request->category_id);
+                if ($category) {
+                    $validAttributeValueIds = $category->attributeValues->pluck('id')->toArray();
+                }
+            }
+
             foreach ($variantsData as $index => $variantData) {
+                // Validate variant attributes against category mapped attributes
+                if (!empty($variantData['attributes']) && is_array($variantData['attributes'])) {
+                    $invalidAttributes = array_diff($variantData['attributes'], $validAttributeValueIds);
+                    if (!empty($invalidAttributes)) {
+                        throw new \Exception("One or more selected attribute values are not mapped to this product's category.");
+                    }
+                }
+
                 $variant = $product->variants()->create([
                     'sku' => $variantData['sku'] ?? $product->slug . '-' . uniqid(),
                     'price' => $variantData['price'] ?? 0,
@@ -254,7 +272,24 @@ class ProductController extends Controller implements HasMiddleware
             // Delete removed variants
             $product->variants()->whereNotIn('id', $submittedVariantIds)->delete();
 
+            // Get valid attribute values for the category
+            $validAttributeValueIds = [];
+            if ($request->category_id) {
+                $category = Category::with('attributeValues')->find($request->category_id);
+                if ($category) {
+                    $validAttributeValueIds = $category->attributeValues->pluck('id')->toArray();
+                }
+            }
+
             foreach ($variantsData as $index => $variantData) {
+                // Validate variant attributes against category mapped attributes
+                if (!empty($variantData['attributes']) && is_array($variantData['attributes'])) {
+                    $invalidAttributes = array_diff($variantData['attributes'], $validAttributeValueIds);
+                    if (!empty($invalidAttributes)) {
+                        throw new \Exception("One or more selected attribute values are not mapped to this product's category.");
+                    }
+                }
+
                 if (isset($variantData['id'])) {
                     // Update existing
                     $variant = ProductVariant::find($variantData['id']);
