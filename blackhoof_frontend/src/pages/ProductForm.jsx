@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchAttributes } from '../store/slices/attributesSlice';
 import { createProduct, updateProduct, fetchProduct, clearCurrentProduct } from '../store/slices/productsSlice';
-import { ArrowLeft, Upload, X, Trash2, Star } from 'lucide-react';
+import { ArrowLeft, Upload, X, Trash2, Star, Info } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import api from '../api/axios';
+import SectionAuditModal from '../components/SectionAuditModal';
 
 export default function ProductForm() {
     const { id } = useParams();
@@ -25,6 +27,12 @@ export default function ProductForm() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Audit Logs State
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [auditModalOpen, setAuditModalOpen] = useState(false);
+    const [auditModalTitle, setAuditModalTitle] = useState('');
+    const [auditModalFields, setAuditModalFields] = useState([]);
     
     // Form State
     const [name, setName] = useState('');
@@ -57,6 +65,11 @@ export default function ProductForm() {
         
         if (isEditMode) {
             dispatch(fetchProduct(id));
+            
+            // Fetch audit logs for this product
+            api.get(`/audit-logs?subject_type=App\\Models\\Product&subject_id=${id}`)
+                .then(res => setAuditLogs(res.data.data.data || []))
+                .catch(err => console.error("Error fetching audit logs", err));
         } else {
             dispatch(clearCurrentProduct());
         }
@@ -65,6 +78,12 @@ export default function ProductForm() {
             dispatch(clearCurrentProduct());
         };
     }, [dispatch, id, isEditMode]);
+
+    const openAuditModal = (title, fields) => {
+        setAuditModalTitle(title);
+        setAuditModalFields(fields);
+        setAuditModalOpen(true);
+    };
 
     // Derived filtered attributes based on selected category
     const [filteredAttributes, setFilteredAttributes] = useState([]);
@@ -433,7 +452,19 @@ export default function ProductForm() {
                     {/* Basic Info Card */}
                     {hasPermission('create/edit product basic info') && (
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Basic Information</h2>
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h2 className="text-lg font-bold text-gray-900">Basic Information</h2>
+                                {isEditMode && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => openAuditModal('Basic Information', ['name', 'short_description', 'description'])}
+                                        className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                        title="View History"
+                                    >
+                                        <Info className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
@@ -616,7 +647,19 @@ export default function ProductForm() {
                     {/* Product For Card */}
                     {hasPermission('create/edit product for') && (
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Product For</h2>
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h2 className="text-lg font-bold text-gray-900">Product For</h2>
+                                {isEditMode && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => openAuditModal('Product For', ['product_for'])}
+                                        className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                        title="View History"
+                                    >
+                                        <Info className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             <div className="flex gap-4">
                                 <label className={`flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${productFor === 'blackhoof' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary font-medium' : 'border-gray-200 hover:border-brand-primary/50 text-gray-600'}`}>
                                     <input type="radio" name="product_for" value="blackhoof" checked={productFor === 'blackhoof'} onChange={e => setProductFor(e.target.value)} className="hidden" />
@@ -633,7 +676,19 @@ export default function ProductForm() {
                     {/* Settings Card */}
                     {hasPermission('create/edit product settings') && (
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Settings</h2>
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h2 className="text-lg font-bold text-gray-900">Settings</h2>
+                                {isEditMode && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => openAuditModal('Settings', ['is_active', 'is_trending', 'is_top_seller', 'include_in_catalogue', 'show_on_website', 'ready_to_publish'])}
+                                        className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                        title="View History"
+                                    >
+                                        <Info className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             
                             <div className="flex items-center justify-between pt-2">
                                 <span className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-gray-500'}`}>
@@ -700,7 +755,19 @@ export default function ProductForm() {
                     {/* Category Card */}
                     {hasPermission('create/edit product category') && (
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                            <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Category</h2>
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h2 className="text-lg font-bold text-gray-900">Category</h2>
+                                {isEditMode && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => openAuditModal('Category', ['category_id'])}
+                                        className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                        title="View History"
+                                    >
+                                        <Info className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Select Category</label>
                                 <div className="w-full max-h-72 overflow-y-auto rounded-lg bg-white">
@@ -759,6 +826,14 @@ export default function ProductForm() {
                     </div>
                 </div>
             </form>
+
+            <SectionAuditModal 
+                isOpen={auditModalOpen}
+                onClose={() => setAuditModalOpen(false)}
+                title={auditModalTitle}
+                fields={auditModalFields}
+                logs={auditLogs}
+            />
         </div>
     );
 }
