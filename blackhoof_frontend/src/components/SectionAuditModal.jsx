@@ -20,9 +20,22 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
         });
     };
 
-    const formatValue = (val) => {
+    const formatValue = (val, key = '') => {
         if (val === null || val === undefined || val === '') return <span className="text-gray-400 italic">Empty</span>;
         if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+        
+        // Render image if the key suggests it's an image path
+        if (typeof val === 'string' && (key === 'image_path' || val.match(/\.(jpeg|jpg|gif|png|webp)$/i))) {
+            const imageUrl = val.startsWith('http') ? val : `http://localhost:8000/storage/${val}`;
+            return (
+                <div className="flex flex-col gap-1">
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={imageUrl} alt="Log image" className="h-20 object-contain rounded border border-gray-200 hover:opacity-80 transition-opacity" />
+                    </a>
+                </div>
+            );
+        }
+
         if (typeof val === 'object') return JSON.stringify(val);
         
         if (typeof val === 'string') {
@@ -109,14 +122,14 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                                                         
                                                         {log.event === 'created' ? (
                                                             <div className="text-sm text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words">
-                                                                {formatValue(newValue)}
+                                                                {formatValue(newValue, field)}
                                                             </div>
                                                         ) : (
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                                 <div className="relative">
                                                                     <div className="text-[10px] font-bold text-red-500 absolute -top-2 left-3 bg-white px-1.5 shadow-sm rounded border border-red-100">OLD</div>
                                                                     <div className="text-sm text-gray-600 bg-red-50/30 p-3 pt-4 rounded-lg border border-red-100 min-h-[3.5rem] break-words">
-                                                                        {formatValue(oldValue)}
+                                                                        {formatValue(oldValue, field)}
                                                                     </div>
                                                                 </div>
                                                                 <div className="relative">
@@ -124,7 +137,7 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                                                                         NEW <ArrowRight className="w-3 h-3 inline" />
                                                                     </div>
                                                                     <div className="text-sm text-gray-900 bg-green-50/30 p-3 pt-4 rounded-lg border border-green-200 min-h-[3.5rem] break-words">
-                                                                        {formatValue(newValue)}
+                                                                        {formatValue(newValue, field)}
                                                                     </div>
                                                                 </div>
                                                             </div>

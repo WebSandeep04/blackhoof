@@ -270,9 +270,9 @@ class ProductController extends Controller implements HasMiddleware
             }
             
             // Delete images that were removed by the user (do this BEFORE adding new ones so we don't accidentally delete fresh uploads)
+            // Note: We intentionally do NOT delete the physical file from Storage so the Audit Logs can still display the deleted image thumbnail.
             $imagesToDelete = $product->images()->whereNotIn('id', $existingImageIds)->get();
             foreach ($imagesToDelete as $img) {
-                Storage::disk('public')->delete($img->image_path);
                 $img->delete();
             }
             
@@ -389,10 +389,10 @@ class ProductController extends Controller implements HasMiddleware
     {
         $product = Product::findOrFail($id);
         
-        // Delete physical images
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->image_path);
-        }
+        // Note: We intentionally do NOT delete the physical files from Storage so the Audit Logs can still display the deleted image thumbnails.
+        // foreach ($product->images as $image) {
+        //     Storage::disk('public')->delete($image->image_path);
+        // }
         
         $product->delete(); // Cascades to variants and images (db records)
         

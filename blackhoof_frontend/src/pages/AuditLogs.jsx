@@ -70,9 +70,23 @@ export default function AuditLogs({ isTab = false }) {
         return doc.body.textContent || "";
     };
 
-    const formatValue = (val) => {
+    const formatValue = (val, key = '') => {
         if (val === null || val === undefined || val === '') return <span className="text-gray-400 italic">Empty</span>;
         if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+        
+        // Render image if the key suggests it's an image path
+        if (typeof val === 'string' && (key === 'image_path' || val.match(/\.(jpeg|jpg|gif|png|webp)$/i))) {
+            const imageUrl = val.startsWith('http') ? val : `http://localhost:8000/storage/${val}`;
+            return (
+                <div className="flex flex-col gap-1">
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={imageUrl} alt="Log image" className="h-16 w-16 object-cover rounded border border-gray-200 hover:opacity-80 transition-opacity" />
+                    </a>
+                    <span className="text-[10px] text-gray-500 truncate max-w-[150px]" title={val}>{val.split('/').pop()}</span>
+                </div>
+            );
+        }
+
         if (typeof val === 'object') return JSON.stringify(val);
         if (typeof val === 'string') {
             return stripHtml(val);
@@ -81,28 +95,32 @@ export default function AuditLogs({ isTab = false }) {
     };
 
     const renderChanges = (properties) => {
-        if (!properties || !properties.attributes) return <div className="text-gray-400 italic text-sm">No changes recorded</div>;
+        if (!properties || (!properties.attributes && !properties.old)) return <div className="text-gray-400 italic text-sm">No changes recorded</div>;
+        
         const { old, attributes } = properties;
+        const keys = attributes ? Object.keys(attributes) : (old ? Object.keys(old) : []);
         
         return (
             <div className="space-y-2 mt-2">
-                {Object.keys(attributes).filter(key => key !== 'product_id').map(key => {
-                    if (old && old[key] === attributes[key]) return null;
+                {keys.filter(key => key !== 'product_id').map(key => {
+                    if (old && attributes && old[key] === attributes[key]) return null;
                     return (
                         <div key={key} className="text-sm bg-white border border-gray-100 rounded-md p-2 flex flex-col sm:flex-row sm:items-center gap-2 shadow-sm">
                             <div className="font-medium text-gray-700 min-w-[120px]">{key.replace(/_/g, ' ').toUpperCase()}:</div>
                             <div className="flex items-center gap-2 flex-1 break-words overflow-hidden">
-                                {old && (
+                                {old && old[key] !== undefined && (
                                     <>
                                         <div className="bg-red-50 text-red-700 px-2 py-1 rounded line-through flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide max-w-[200px]">
-                                            {formatValue(old[key])}
+                                            {formatValue(old[key], key)}
                                         </div>
-                                        <span className="text-gray-400 shrink-0">→</span>
+                                        {attributes && attributes[key] !== undefined && <span className="text-gray-400 shrink-0">→</span>}
                                     </>
                                 )}
-                                <div className="bg-green-50 text-green-700 px-2 py-1 rounded flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide max-w-[200px]">
-                                    {formatValue(attributes[key])}
-                                </div>
+                                {attributes && attributes[key] !== undefined && (
+                                    <div className="bg-green-50 text-green-700 px-2 py-1 rounded flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide max-w-[200px]">
+                                        {formatValue(attributes[key], key)}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
