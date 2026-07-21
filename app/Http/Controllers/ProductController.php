@@ -168,6 +168,18 @@ class ProductController extends Controller implements HasMiddleware
                         ]);
                     }
                 }
+
+                // Handle variant videos
+                if ($request->hasFile("variant_videos_{$index}")) {
+                    foreach ($request->file("variant_videos_{$index}") as $vidIndex => $file) {
+                        $path = $file->store('products/videos', 'public');
+                        $product->videos()->create([
+                            'product_variant_id' => $variant->id,
+                            'video_path' => $path,
+                            'sort_order' => $vidIndex,
+                        ]);
+                    }
+                }
             }
 
             // 3. Handle Images
@@ -177,6 +189,17 @@ class ProductController extends Controller implements HasMiddleware
                     $product->images()->create([
                         'image_path' => $path,
                         'is_main' => $index === 0, // First image is main by default
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            // 4. Handle Videos
+            if ($request->hasFile('videos')) {
+                foreach ($request->file('videos') as $index => $file) {
+                    $path = $file->store('products/videos', 'public');
+                    $product->videos()->create([
+                        'video_path' => $path,
                         'sort_order' => $index,
                     ]);
                 }
@@ -275,6 +298,19 @@ class ProductController extends Controller implements HasMiddleware
             foreach ($imagesToDelete as $img) {
                 $img->delete();
             }
+
+            // Prepare Existing Videos & Delete Removed Videos first
+            $existingVideoIds = [];
+            if ($request->filled('existing_videos')) {
+                $existingVideoIds = json_decode($request->existing_videos, true) ?? [];
+            }
+            $videosToDelete = $product->videos()->whereNull('product_variant_id')->whereNotIn('id', $existingVideoIds)->get();
+            foreach ($videosToDelete as $vid) {
+                if (Storage::disk('public')->exists($vid->video_path)) {
+                    Storage::disk('public')->delete($vid->video_path);
+                }
+                $vid->delete();
+            }
             
             // Delete removed variants
             $product->variants()->whereNotIn('id', $submittedVariantIds)->delete();
@@ -354,6 +390,31 @@ class ProductController extends Controller implements HasMiddleware
                             ]);
                         }
                     }
+
+                    // Handle variant videos deletion and creation
+                    $existingVariantVideoIds = [];
+                    if ($request->filled("variant_existing_videos_{$index}")) {
+                        $existingVariantVideoIds = json_decode($request->input("variant_existing_videos_{$index}"), true) ?? [];
+                    }
+                    $variantVideosToDelete = $product->videos()->where('product_variant_id', $variant->id)->whereNotIn('id', $existingVariantVideoIds)->get();
+                    foreach ($variantVideosToDelete as $vid) {
+                        if (Storage::disk('public')->exists($vid->video_path)) {
+                            Storage::disk('public')->delete($vid->video_path);
+                        }
+                        $vid->delete();
+                    }
+
+                    if ($request->hasFile("variant_videos_{$index}")) {
+                        $maxSort = $product->videos()->where('product_variant_id', $variant->id)->max('sort_order') ?? 0;
+                        foreach ($request->file("variant_videos_{$index}") as $vidIndex => $file) {
+                            $path = $file->store('products/videos', 'public');
+                            $product->videos()->create([
+                                'product_variant_id' => $variant->id,
+                                'video_path' => $path,
+                                'sort_order' => $maxSort + $vidIndex + 1,
+                            ]);
+                        }
+                    }
                 }
             }
 
@@ -368,6 +429,18 @@ class ProductController extends Controller implements HasMiddleware
                     $product->images()->create([
                         'image_path' => $path,
                         'is_main' => count($existingImageIds) === 0 && $index === 0, // Main if it's the first ever
+                        'sort_order' => $maxSort + $index + 1,
+                    ]);
+                }
+            }
+
+            // 4. Handle New Main Videos
+            if ($request->hasFile('videos')) {
+                $maxSort = $product->videos()->whereNull('product_variant_id')->max('sort_order') ?? 0;
+                foreach ($request->file('videos') as $index => $file) {
+                    $path = $file->store('products/videos', 'public');
+                    $product->videos()->create([
+                        'video_path' => $path,
                         'sort_order' => $maxSort + $index + 1,
                     ]);
                 }

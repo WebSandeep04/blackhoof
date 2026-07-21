@@ -26,6 +26,8 @@ class ProductVariant extends Model
         $activity->properties = $activity->properties->put('product_id', $this->product_id);
     }
 
+    protected $with = ['videos'];
+
     protected $fillable = [
         'product_id',
         'sku',
@@ -46,5 +48,10 @@ class ProductVariant extends Model
     public function images()
     {
         return $this->hasMany(ProductImage::class, 'product_variant_id')->orderBy('sort_order');
+    }
+
+    public function videos()
+    {
+        return $this->hasMany(ProductVideo::class)->orderBy('sort_order');
     }
 }

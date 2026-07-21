@@ -50,6 +50,8 @@ export default function ProductForm() {
     const [productFor, setProductFor] = useState('blackhoof');
     const [hasVariants, setHasVariants] = useState(true); // Default to true as requested
     // Images have been moved to variant level
+    const [videos, setVideos] = useState([]);
+    const [existingVideos, setExistingVideos] = useState([]);
 
     // Simple Product Data
     const [simplePrice, setSimplePrice] = useState('');
@@ -146,6 +148,7 @@ export default function ProductForm() {
             setShowOnWebsite(currentProduct.show_on_website ?? true);
             setReadyToPublish(currentProduct.ready_to_publish ?? false);
             setProductFor(currentProduct.product_for || 'blackhoof');
+            setExistingVideos(currentProduct.videos || []);
             
 
             // Check if it has multiple variants, or variants with attributes
@@ -163,6 +166,8 @@ export default function ProductForm() {
                     _attributeNames: (v.attribute_values || []).map(av => av.value).join(', '), // Display helper
                     existingImages: v.images || [],
                     newImages: [],
+                    existingVideos: v.videos || [],
+                    newVideos: [],
                     mainImageKey: v.images?.find(img => img.is_main) ? `existing-${v.images.find(img => img.is_main).id}` : null
                 })));
                 
@@ -189,6 +194,8 @@ export default function ProductForm() {
                         id: defaultVariant.id, 
                         existingImages: defaultVariant.images || [],
                         newImages: [],
+                        existingVideos: defaultVariant.videos || [],
+                        newVideos: [],
                         mainImageKey: defaultVariant.images?.find(img => img.is_main) ? `existing-${defaultVariant.images.find(img => img.is_main).id}` : null
                     }]);
                 }
@@ -225,6 +232,37 @@ export default function ProductForm() {
         if (newVariants[variantIndex].mainImageKey === `existing-${idToRemove}`) {
             newVariants[variantIndex].mainImageKey = null;
         }
+        setVariants(newVariants);
+    };
+
+    const handleVideoChange = (e) => {
+        setVideos(prev => [...prev, ...Array.from(e.target.files)]);
+    };
+
+    const removeNewVideo = (index) => {
+        setVideos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const removeExistingVideo = (idToRemove) => {
+        setExistingVideos(prev => prev.filter(v => v.id !== idToRemove));
+    };
+
+    const handleVariantVideoChange = (index, e) => {
+        const files = Array.from(e.target.files);
+        const newVariants = [...variants];
+        newVariants[index].newVideos = [...(newVariants[index].newVideos || []), ...files];
+        setVariants(newVariants);
+    };
+
+    const removeVariantNewVideo = (variantIndex, videoIndex) => {
+        const newVariants = [...variants];
+        newVariants[variantIndex].newVideos.splice(videoIndex, 1);
+        setVariants(newVariants);
+    };
+
+    const removeVariantExistingVideo = (variantIndex, idToRemove) => {
+        const newVariants = [...variants];
+        newVariants[variantIndex].existingVideos = newVariants[variantIndex].existingVideos.filter(v => v.id !== idToRemove);
         setVariants(newVariants);
     };
 
@@ -313,6 +351,8 @@ export default function ProductForm() {
                 _attributeNames: attrNames.replace(/-/g, ', '), // For display
                 existingImages: existingVariant ? (existingVariant.images || []) : [],
                 newImages: [],
+                existingVideos: existingVariant ? (existingVariant.videos || []) : [],
+                newVideos: [],
                 mainImageKey: existingVariant && existingVariant.images?.find(img => img.is_main) ? `existing-${existingVariant.images.find(img => img.is_main).id}` : null
             };
         });
@@ -402,7 +442,26 @@ export default function ProductForm() {
                 }
             });
             formData.append('existing_images', JSON.stringify(allExistingIds));
+
+            const allExistingVideoIds = existingVideos.map(v => v.id);
+            formData.append('existing_videos', JSON.stringify(allExistingVideoIds));
         }
+
+        videos.forEach(file => {
+            formData.append('videos[]', file);
+        });
+
+        finalVariants.forEach((variant, index) => {
+            if (variant.newVideos && variant.newVideos.length > 0) {
+                variant.newVideos.forEach(file => {
+                    formData.append(`variant_videos_${index}[]`, file);
+                });
+            }
+            if (isEditMode) {
+                const existingVariantVidIds = (variant.existingVideos || []).map(v => v.id);
+                formData.append(`variant_existing_videos_${index}`, JSON.stringify(existingVariantVidIds));
+            }
+        });
 
         setIsSubmitting(true);
         try {
@@ -507,6 +566,38 @@ export default function ProductForm() {
                                     />
                                 </div>
                             </div>
+
+                            <div className="pb-4 mt-4 border-t pt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Product Videos</label>
+                                <div className="flex flex-col gap-3">
+                                    <div className="relative overflow-hidden w-full h-12 flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:border-brand-primary/50 transition cursor-pointer">
+                                        <input type="file" multiple accept="video/mp4,video/webm" onChange={handleVideoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <Upload className="w-4 h-4 mr-2" /> Upload Videos
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {existingVideos.map(vid => (
+                                            <div key={vid.id} className="relative w-32 h-24 rounded-lg border overflow-hidden group bg-black">
+                                                <video src={vid.url} className="w-full h-full object-contain" />
+                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <button type="button" onClick={() => removeExistingVideo(vid.id)} className="text-white hover:text-red-400 p-2 bg-black/50 rounded-full">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {videos.map((file, idx) => (
+                                            <div key={idx} className="relative w-32 h-24 rounded-lg border border-brand-primary overflow-hidden group bg-black">
+                                                <video src={URL.createObjectURL(file)} className="w-full h-full object-contain" />
+                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <button type="button" onClick={() => removeNewVideo(idx)} className="text-white hover:text-red-400 p-2 bg-black/50 rounded-full">
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -596,6 +687,7 @@ export default function ProductForm() {
                                                 <th className="px-4 py-3 font-medium w-48">SKU</th>
                                                 <th className="px-4 py-3 font-medium w-32">Stock *</th>
                                                 <th className="px-4 py-3 font-medium w-64">Images</th>
+                                                <th className="px-4 py-3 font-medium w-64">Videos</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -644,6 +736,36 @@ export default function ProductForm() {
                                                                             </button>
                                                                         </div>
                                                                         {variant.mainImageKey === `new-${imgIdx}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 pt-4 pb-3">
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
+                                                                <input type="file" multiple accept="video/mp4,video/webm" onChange={(e) => handleVariantVideoChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                                <Upload className="w-3 h-3 mr-1" /> Add Videos
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mt-1 max-w-full">
+                                                                {(variant.existingVideos || []).map(vid => (
+                                                                    <div key={vid.id} className="relative w-16 h-12 rounded border overflow-hidden group bg-black">
+                                                                        <video src={vid.url} className="w-full h-full object-contain" />
+                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                            <button type="button" onClick={() => removeVariantExistingVideo(index, vid.id)} className="text-white hover:text-red-400">
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {(variant.newVideos || []).map((file, vidIdx) => (
+                                                                    <div key={vidIdx} className="relative w-16 h-12 rounded border border-brand-primary/50 overflow-hidden group bg-black">
+                                                                        <video src={URL.createObjectURL(file)} className="w-full h-full object-contain" />
+                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                            <button type="button" onClick={() => removeVariantNewVideo(index, vidIdx)} className="text-white hover:text-red-400">
+                                                                                <X className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
