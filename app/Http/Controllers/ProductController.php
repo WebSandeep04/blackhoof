@@ -168,6 +168,18 @@ class ProductController extends Controller implements HasMiddleware
                         ]);
                     }
                 }
+
+                // Handle variant videos
+                if ($request->hasFile("variant_videos_{$index}")) {
+                    foreach ($request->file("variant_videos_{$index}") as $vidIndex => $file) {
+                        $path = $file->store('products/videos', 'public');
+                        $product->videos()->create([
+                            'product_variant_id' => $variant->id,
+                            'video_path' => $path,
+                            'sort_order' => $vidIndex,
+                        ]);
+                    }
+                }
             }
 
             // 3. Handle Images
@@ -177,6 +189,17 @@ class ProductController extends Controller implements HasMiddleware
                     $product->images()->create([
                         'image_path' => $path,
                         'is_main' => $index === 0, // First image is main by default
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            // 4. Handle Videos
+            if ($request->hasFile('videos')) {
+                foreach ($request->file('videos') as $index => $file) {
+                    $path = $file->store('products/videos', 'public');
+                    $product->videos()->create([
+                        'video_path' => $path,
                         'sort_order' => $index,
                     ]);
                 }
@@ -265,15 +288,48 @@ class ProductController extends Controller implements HasMiddleware
             
             // 3. Prepare Existing Images & Delete Removed Images first
             $existingImageIds = [];
-            if ($request->filled('existing_images')) {
-                $existingImageIds = json_decode($request->existing_images, true) ?? [];
+            if ($request->has('existing_images')) {
+                \Log::info("Raw existing_images received: " . $request->existing_images);
+                $decoded = json_decode($request->existing_images, true);
+                if (is_array($decoded)) {
+                    $existingImageIds = $decoded;
+                }
             }
+            \Log::info("Parsed existingImageIds: ", $existingImageIds);
             
             // Delete images that were removed by the user (do this BEFORE adding new ones so we don't accidentally delete fresh uploads)
             // Note: We intentionally do NOT delete the physical file from Storage so the Audit Logs can still display the deleted image thumbnail.
-            $imagesToDelete = $product->images()->whereNotIn('id', $existingImageIds)->get();
+            $imagesQuery = $product->images();
+            if (!empty($existingImageIds)) {
+                $imagesQuery->whereNotIn('id', $existingImageIds);
+            }
+            $imagesToDelete = $imagesQuery->get();
+            \Log::info("Images to delete count: " . $imagesToDelete->count(), $imagesToDelete->pluck('id')->toArray());
             foreach ($imagesToDelete as $img) {
+                \Log::info("Deleting image ID: {$img->id}");
                 $img->delete();
+            }
+
+            // Prepare Existing Videos & Delete Removed Videos first
+            $existingVideoIds = [];
+            if ($request->has('existing_videos')) {
+                \Log::info("Raw existing_videos received: " . $request->existing_videos);
+                $decoded = json_decode($request->existing_videos, true);
+                if (is_array($decoded)) {
+                    $existingVideoIds = $decoded;
+                }
+            }
+            \Log::info("Parsed existingVideoIds: ", $existingVideoIds);
+            
+            $videosQuery = $product->videos()->whereNull('product_variant_id');
+            if (!empty($existingVideoIds)) {
+                $videosQuery->whereNotIn('id', $existingVideoIds);
+            }
+            $videosToDelete = $videosQuery->get();
+            
+            foreach ($videosToDelete as $vid) {
+                // Note: We intentionally do NOT delete the physical video file from Storage so the Audit Logs can still display it.
+                $vid->delete();
             }
             
             // Delete removed variants
@@ -354,6 +410,40 @@ class ProductController extends Controller implements HasMiddleware
                             ]);
                         }
                     }
+
+                    // Handle variant videos deletion and creation
+                    $existingVariantVideoIds = [];
+                    if ($request->has("variant_existing_videos_{$index}")) {
+                        \Log::info("Raw variant_existing_videos_{$index}: " . $request->input("variant_existing_videos_{$index}"));
+                        $decoded = json_decode($request->input("variant_existing_videos_{$index}"), true);
+                        if (is_array($decoded)) {
+                            $existingVariantVideoIds = $decoded;
+                        }
+                    }
+                    \Log::info("Parsed existingVariantVideoIds for variant {$index}: ", $existingVariantVideoIds);
+                    
+                    $variantVideosQuery = \App\Models\ProductVideo::where('product_id', $product->id)->where('product_variant_id', $variant->id);
+                    if (!empty($existingVariantVideoIds)) {
+                        $variantVideosQuery->whereNotIn('id', $existingVariantVideoIds);
+                    }
+                    $variantVideosToDelete = $variantVideosQuery->get();
+                    
+                    foreach ($variantVideosToDelete as $vid) {
+                        // Note: We intentionally do NOT delete the physical video file from Storage so the Audit Logs can still display it.
+                        $vid->delete();
+                    }
+
+                    if ($request->hasFile("variant_videos_{$index}")) {
+                        $maxSort = \App\Models\ProductVideo::where('product_id', $product->id)->where('product_variant_id', $variant->id)->max('sort_order') ?? 0;
+                        foreach ($request->file("variant_videos_{$index}") as $vidIndex => $file) {
+                            $path = $file->store('products/videos', 'public');
+                            $product->videos()->create([
+                                'product_variant_id' => $variant->id,
+                                'video_path' => $path,
+                                'sort_order' => $maxSort + $vidIndex + 1,
+                            ]);
+                        }
+                    }
                 }
             }
 
@@ -373,11 +463,27 @@ class ProductController extends Controller implements HasMiddleware
                 }
             }
 
+            // 4. Handle New Main Videos
+            if ($request->hasFile('videos')) {
+                $maxSort = $product->videos()->whereNull('product_variant_id')->max('sort_order') ?? 0;
+                foreach ($request->file('videos') as $index => $file) {
+                    $path = $file->store('products/videos', 'public');
+                    $product->videos()->create([
+                        'video_path' => $path,
+                        'sort_order' => $maxSort + $index + 1,
+                    ]);
+                }
+            }
+
             DB::commit();
 
-            return response()->json($product->load(['category', 'variants.attributeValues', 'images']));
+            \Log::info("Transaction committed successfully.");
+            $product->refresh();
+            \Log::info("Product refreshed. Returning response.");
+            return response()->json($product->load(['category', 'variants.attributeValues', 'images', 'variants.images']));
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error("Failed to update product: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['message' => 'Failed to update product', 'error' => $e->getMessage()], 500);
         }
     }

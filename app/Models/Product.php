@@ -26,6 +26,8 @@ class Product extends Model
         $activity->properties = $activity->properties->put('product_id', (int) $this->id);
     }
 
+    protected $with = ['videos'];
+
     protected $fillable = [
         'category_id',
         'name',
@@ -63,6 +65,11 @@ class Product extends Model
     public function images()
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function videos()
+    {
+        return $this->hasMany(ProductVideo::class)->whereNull('product_variant_id')->orderBy('sort_order');
     }
 
     // Helper to get the main image

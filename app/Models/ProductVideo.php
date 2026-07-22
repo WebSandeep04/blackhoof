@@ -1,14 +1,13 @@
 <?php
 
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Models\Activity;
 
-class ProductVariant extends Model
+class ProductVideo extends Model
 {
     use HasFactory, LogsActivity;
 
@@ -22,36 +21,31 @@ class ProductVariant extends Model
 
     public function tapActivity(Activity $activity, string $eventName)
     {
-        // Inject the product_id so we can easily query variant logs by product
-        $activity->properties = $activity->properties->put('product_id', $this->product_id);
+        $activity->properties = $activity->properties->put('product_id', (int) $this->product_id);
     }
-
-    protected $with = ['videos'];
 
     protected $fillable = [
         'product_id',
-        'sku',
-        'price',
-        'stock_quantity',
+        'product_variant_id',
+        'video_path',
+        'sort_order'
     ];
+
+    protected $appends = ['url'];
 
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function attributeValues()
+    public function variant()
     {
-        return $this->belongsToMany(AttributeValue::class, 'product_variant_attribute_value');
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    public function images()
+    public function getUrlAttribute()
     {
-        return $this->hasMany(ProductImage::class, 'product_variant_id')->orderBy('sort_order');
-    }
-
-    public function videos()
-    {
-        return $this->hasMany(ProductVideo::class)->orderBy('sort_order');
+        if (!$this->video_path) return null;
+        return asset('storage/' . $this->video_path);
     }
 }
