@@ -27,7 +27,7 @@ export default function ProductForm() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState([]);
     const [variantLogs, setVariantLogs] = useState([]);
@@ -35,7 +35,7 @@ export default function ProductForm() {
     const [auditModalTitle, setAuditModalTitle] = useState('');
     const [auditModalFields, setAuditModalFields] = useState([]);
     const [auditModalLogs, setAuditModalLogs] = useState([]);
-    
+
     // Form State
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState('');
@@ -66,15 +66,15 @@ export default function ProductForm() {
     useEffect(() => {
         dispatch(fetchCategories({ all: true }));
         dispatch(fetchAttributes({ all: true }));
-        
+
         if (isEditMode) {
             dispatch(fetchProduct(id));
-            
+
             // Fetch audit logs for this product
             api.get(`/audit-logs?subject_type=App\\Models\\Product&subject_id=${id}`)
                 .then(res => setAuditLogs(res.data.data.data || []))
                 .catch(err => console.error("Error fetching audit logs", err));
-                
+
             // Fetch audit logs for product variants and images
             api.get(`/audit-logs?related_product_id=${id}`)
                 .then(res => setVariantLogs(res.data.data.data || []))
@@ -108,14 +108,14 @@ export default function ProductForm() {
         if (category && category.attributes) {
             const mappedAttrIds = category.attributes.map(a => a.id);
             const mappedValueIds = (category.attribute_values || []).map(v => v.id);
-            
+
             const newFilteredAttributes = flatAttributes
                 .filter(a => mappedAttrIds.includes(a.id))
                 .map(a => ({
                     ...a,
                     values: (a.values || []).filter(v => mappedValueIds.includes(v.id))
                 }));
-                
+
             setFilteredAttributes(newFilteredAttributes);
         } else {
             setFilteredAttributes([]);
@@ -128,7 +128,7 @@ export default function ProductForm() {
         if (isEditMode && (!currentProduct || currentProduct.category_id == categoryId)) {
             return;
         }
-        
+
         // Reset variant builder
         setSelectedAttributes([]);
         setSelectedAttributeValues([]);
@@ -149,12 +149,12 @@ export default function ProductForm() {
             setReadyToPublish(currentProduct.ready_to_publish ?? false);
             setProductFor(currentProduct.product_for || 'blackhoof');
             setExistingVideos(currentProduct.videos || []);
-            
+
 
             // Check if it has multiple variants, or variants with attributes
             const hasMultipleVariants = currentProduct.variants?.length > 1;
             const hasAttributeValues = currentProduct.variants?.[0]?.attribute_values?.length > 0;
-            
+
             if (hasMultipleVariants || hasAttributeValues) {
                 setHasVariants(true);
                 setVariants((currentProduct.variants || []).map(v => ({
@@ -170,7 +170,7 @@ export default function ProductForm() {
                     newVideos: [],
                     mainImageKey: v.images?.find(img => img.is_main) ? `existing-${v.images.find(img => img.is_main).id}` : null
                 })));
-                
+
                 // Extract unique attribute IDs and Value IDs used
                 const usedAttributeIds = new Set();
                 const usedAttributeValueIds = new Set();
@@ -190,8 +190,8 @@ export default function ProductForm() {
                     setSimpleSku(defaultVariant.sku);
                     setSimpleStock(defaultVariant.stock_quantity);
                     // keep track of ID for updating
-                    setVariants([{ 
-                        id: defaultVariant.id, 
+                    setVariants([{
+                        id: defaultVariant.id,
                         existingImages: defaultVariant.images || [],
                         newImages: [],
                         existingVideos: defaultVariant.videos || [],
@@ -302,7 +302,7 @@ export default function ProductForm() {
                 values: (a.values || []).filter(v => selectedAttributeValues.includes(v.id))
             }))
             .filter(a => a.values.length > 0); // Only keep attributes that have at least one value selected
-        
+
         if (activeAttributes.length === 0) {
             Swal.fire('Warning', 'You must select at least one value for your chosen attributes.', 'warning');
             return;
@@ -332,11 +332,11 @@ export default function ProductForm() {
         const newVariants = combinations.map((combination) => {
             const attrIds = combination.map(v => v.id);
             const attrNames = combination.map(v => v.value).join('-');
-            
+
             // Try to preserve existing variant data if it matches attributes
             let existingVariant = null;
             if (isEditMode && currentProduct && currentProduct.variants) {
-                 existingVariant = currentProduct.variants.find(v => {
+                existingVariant = currentProduct.variants.find(v => {
                     const vAttrIds = v.attribute_values?.map(av => av.id).sort().join(',');
                     return vAttrIds === [...attrIds].sort().join(',');
                 });
@@ -374,7 +374,7 @@ export default function ProductForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!name.trim()) {
             return Swal.fire('Error', 'Product name is required', 'error');
         }
@@ -394,7 +394,11 @@ export default function ProductForm() {
                 sku: simpleSku || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').toUpperCase(),
                 price: simplePrice || 0,
                 stock_quantity: simpleStock || 0,
-                attributes: []
+                attributes: [],
+                existingImages: variants[0]?.existingImages || [],
+                newImages: variants[0]?.newImages || [],
+                existingVideos: variants[0]?.existingVideos || [],
+                newVideos: variants[0]?.newVideos || []
             }];
         }
 
@@ -463,6 +467,12 @@ export default function ProductForm() {
             }
         });
 
+
+        // Log all variant videos and images
+        finalVariants.forEach((v, index) => {
+            console.log(`Variant ${index} existing videos:`, formData.get(`variant_existing_videos_${index}`));
+        });
+
         setIsSubmitting(true);
         try {
             if (isEditMode) {
@@ -470,7 +480,7 @@ export default function ProductForm() {
             } else {
                 await dispatch(createProduct(formData)).unwrap();
             }
-            
+
             Swal.fire({
                 title: 'Success!',
                 text: 'Product saved successfully.',
@@ -499,7 +509,7 @@ export default function ProductForm() {
     const modules = {
         toolbar: [
             ['bold', 'italic', 'underline'],
-            [{'list': 'ordered'}, {'list': 'bullet'}],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
             ['clean']
         ],
     };
@@ -522,7 +532,7 @@ export default function ProductForm() {
                             <div className="flex items-center justify-between border-b pb-2">
                                 <h2 className="text-lg font-bold text-gray-900">Basic Information</h2>
                                 {isEditMode && (
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => openAuditModal('Basic Information', ['name', 'short_description', 'description'])}
                                         className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
@@ -532,7 +542,7 @@ export default function ProductForm() {
                                     </button>
                                 )}
                             </div>
-                            
+
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -543,10 +553,10 @@ export default function ProductForm() {
                             <div className="pb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
                                 <div className="bg-white rounded-lg border overflow-hidden">
-                                    <ReactQuill 
-                                        theme="snow" 
-                                        value={shortDescription} 
-                                        onChange={setShortDescription} 
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={shortDescription}
+                                        onChange={setShortDescription}
                                         modules={modules}
                                         className="h-40 mb-10"
                                         placeholder="Brief description..."
@@ -556,10 +566,10 @@ export default function ProductForm() {
                             <div className="pb-4 mt-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Long Description</label>
                                 <div className="bg-white rounded-lg border overflow-hidden">
-                                    <ReactQuill 
-                                        theme="snow" 
-                                        value={description} 
-                                        onChange={setDescription} 
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={description}
+                                        onChange={setDescription}
                                         modules={modules}
                                         className="h-64 mb-12"
                                         placeholder="Detailed product description..."
@@ -602,185 +612,184 @@ export default function ProductForm() {
                     )}
 
 
-                {/* Product Type & Pricing Card */}
-                {hasPermission('create/edit product inventory') && (
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
-                        <div className="flex items-center justify-between border-b pb-2">
-                            <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
-                            {isEditMode && (
-                                <button 
-                                    type="button"
-                                    onClick={() => openAuditModal('Inventory & Variations', ['sku', 'price', 'stock_quantity', 'image_path', 'is_main', 'sort_order'], variantLogs)}
-                                    className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
-                                    title="View History"
-                                >
-                                    <Info className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Variable Product Matrix Builder */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">1. Select Attributes to create variations</label>
-                                {filteredAttributes.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {filteredAttributes.map(attr => (
-                                            <button 
-                                                key={attr.id}
-                                                type="button"
-                                                onClick={() => toggleAttribute(attr.id)}
-                                                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
-                                                    selectedAttributes.includes(attr.id) 
-                                                    ? 'bg-brand-primary/10 border-brand-primary text-brand-primary' 
-                                                    : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
-                                                }`}
-                                            >
-                                                {attr.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        No attributes are mapped to this category. Please map attributes in the Category settings first.
-                                    </div>
-                                )}
-
-                                {selectedAttributes.length > 0 && (
-                                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                        <h3 className="text-sm font-semibold text-gray-900">2. Select Values</h3>
-                                        {filteredAttributes.filter(a => selectedAttributes.includes(a.id)).map(attr => (
-                                            <div key={attr.id} className="mb-3 last:mb-0">
-                                                <div className="text-sm font-medium text-gray-700 mb-2">{attr.name}:</div>
-                                                <div className="flex flex-wrap gap-3">
-                                                    {(attr.values || []).length > 0 ? (attr.values || []).map(val => (
-                                                        <label key={val.id} className="flex items-center gap-1.5 cursor-pointer">
-                                                            <input 
-                                                                type="checkbox"
-                                                                checked={selectedAttributeValues.includes(val.id)}
-                                                                onChange={() => toggleAttributeValue(val.id)}
-                                                                className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
-                                                            />
-                                                            <span className="text-sm text-gray-600">{val.value}</span>
-                                                        </label>
-                                                    )) : <span className="text-sm text-gray-400 italic">No values available for this attribute.</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                    {/* Product Type & Pricing Card */}
+                    {hasPermission('create/edit product inventory') && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h2 className="text-lg font-bold text-gray-900">Inventory & Variations</h2>
+                                {isEditMode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => openAuditModal('Inventory & Variations', ['sku', 'price', 'stock_quantity', 'image_path', 'video_path', 'is_main', 'sort_order'], variantLogs)}
+                                        className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+                                        title="View History"
+                                    >
+                                        <Info className="w-4 h-4" />
+                                    </button>
                                 )}
                             </div>
 
-                            <div>
-                                <button type="button" onClick={generateVariantMatrix} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
-                                    Generate Variant Combinations
-                                </button>
-                            </div>
-
-                            {variants.length > 0 && (
-                                <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
-                                            <tr>
-                                                <th className="px-4 py-3 font-medium w-1/4 min-w-[150px]">Variant</th>
-                                                <th className="px-4 py-3 font-medium w-32">Price *</th>
-                                                <th className="px-4 py-3 font-medium w-48">SKU</th>
-                                                <th className="px-4 py-3 font-medium w-32">Stock *</th>
-                                                <th className="px-4 py-3 font-medium w-64">Images</th>
-                                                <th className="px-4 py-3 font-medium w-64">Videos</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {variants.map((variant, index) => (
-                                                <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50 align-top">
-                                                    <td className="px-4 pt-4 pb-3 font-medium text-gray-900 leading-relaxed">{variant._attributeNames || 'Default'}</td>
-                                                    <td className="px-4 pt-4 pb-3">
-                                                        <input type="number" step="0.01" required value={variant.price} onChange={e => updateVariantField(index, 'price', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
-                                                    </td>
-                                                    <td className="px-4 pt-4 pb-3">
-                                                        <input type="text" value={variant.sku} onChange={e => updateVariantField(index, 'sku', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
-                                                    </td>
-                                                    <td className="px-4 pt-4 pb-3">
-                                                        <input type="number" required value={variant.stock_quantity} onChange={e => updateVariantField(index, 'stock_quantity', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
-                                                    </td>
-                                                    <td className="px-4 pt-4 pb-3">
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
-                                                                <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImageChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                                                <Upload className="w-3 h-3 mr-1" /> Add Images
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-1 mt-1 max-w-full">
-                                                                {(variant.existingImages || []).map(img => (
-                                                                    <div key={img.id} className="relative w-12 h-12 rounded border overflow-hidden group">
-                                                                        <img src={img.url} alt="Variant" className="w-full h-full object-cover" />
-                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
-                                                                            <button type="button" onClick={() => setMainVariantImage(index, `existing-${img.id}`)} className="text-white hover:text-yellow-400">
-                                                                                <Star className={`w-3 h-3 ${variant.mainImageKey === `existing-${img.id}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
-                                                                            </button>
-                                                                            <button type="button" onClick={() => removeVariantExistingImage(index, img.id)} className="text-white hover:text-red-400">
-                                                                                <Trash2 className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-                                                                        {variant.mainImageKey === `existing-${img.id}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
-                                                                    </div>
-                                                                ))}
-                                                                {(variant.newImages || []).map((file, imgIdx) => (
-                                                                    <div key={imgIdx} className="relative w-12 h-12 rounded border border-brand-primary/50 overflow-hidden group">
-                                                                        <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
-                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
-                                                                            <button type="button" onClick={() => setMainVariantImage(index, `new-${imgIdx}`)} className="text-white hover:text-yellow-400">
-                                                                                <Star className={`w-3 h-3 ${variant.mainImageKey === `new-${imgIdx}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
-                                                                            </button>
-                                                                            <button type="button" onClick={() => removeVariantNewImage(index, imgIdx)} className="text-white hover:text-red-400">
-                                                                                <X className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-                                                                        {variant.mainImageKey === `new-${imgIdx}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 pt-4 pb-3">
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
-                                                                <input type="file" multiple accept="video/mp4,video/webm" onChange={(e) => handleVariantVideoChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                                                <Upload className="w-3 h-3 mr-1" /> Add Videos
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-1 mt-1 max-w-full">
-                                                                {(variant.existingVideos || []).map(vid => (
-                                                                    <div key={vid.id} className="relative w-16 h-12 rounded border overflow-hidden group bg-black">
-                                                                        <video src={vid.url} className="w-full h-full object-contain" />
-                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
-                                                                            <button type="button" onClick={() => removeVariantExistingVideo(index, vid.id)} className="text-white hover:text-red-400">
-                                                                                <Trash2 className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                                {(variant.newVideos || []).map((file, vidIdx) => (
-                                                                    <div key={vidIdx} className="relative w-16 h-12 rounded border border-brand-primary/50 overflow-hidden group bg-black">
-                                                                        <video src={URL.createObjectURL(file)} className="w-full h-full object-contain" />
-                                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
-                                                                            <button type="button" onClick={() => removeVariantNewVideo(index, vidIdx)} className="text-white hover:text-red-400">
-                                                                                <X className="w-3 h-3" />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                            {/* Variable Product Matrix Builder */}
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">1. Select Attributes to create variations</label>
+                                    {filteredAttributes.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {filteredAttributes.map(attr => (
+                                                <button
+                                                    key={attr.id}
+                                                    type="button"
+                                                    onClick={() => toggleAttribute(attr.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${selectedAttributes.includes(attr.id)
+                                                            ? 'bg-brand-primary/10 border-brand-primary text-brand-primary'
+                                                            : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                                                        }`}
+                                                >
+                                                    {attr.name}
+                                                </button>
                                             ))}
-                                        </tbody>
-                                    </table>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            No attributes are mapped to this category. Please map attributes in the Category settings first.
+                                        </div>
+                                    )}
+
+                                    {selectedAttributes.length > 0 && (
+                                        <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                            <h3 className="text-sm font-semibold text-gray-900">2. Select Values</h3>
+                                            {filteredAttributes.filter(a => selectedAttributes.includes(a.id)).map(attr => (
+                                                <div key={attr.id} className="mb-3 last:mb-0">
+                                                    <div className="text-sm font-medium text-gray-700 mb-2">{attr.name}:</div>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {(attr.values || []).length > 0 ? (attr.values || []).map(val => (
+                                                            <label key={val.id} className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedAttributeValues.includes(val.id)}
+                                                                    onChange={() => toggleAttributeValue(val.id)}
+                                                                    className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
+                                                                />
+                                                                <span className="text-sm text-gray-600">{val.value}</span>
+                                                            </label>
+                                                        )) : <span className="text-sm text-gray-400 italic">No values available for this attribute.</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+
+                                <div>
+                                    <button type="button" onClick={generateVariantMatrix} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                                        Generate Variant Combinations
+                                    </button>
+                                </div>
+
+                                {variants.length > 0 && (
+                                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-medium w-1/4 min-w-[150px]">Variant</th>
+                                                    <th className="px-4 py-3 font-medium w-32">Price *</th>
+                                                    <th className="px-4 py-3 font-medium w-48">SKU</th>
+                                                    <th className="px-4 py-3 font-medium w-32">Stock *</th>
+                                                    <th className="px-4 py-3 font-medium w-64">Images</th>
+                                                    <th className="px-4 py-3 font-medium w-64">Videos</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {variants.map((variant, index) => (
+                                                    <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50 align-top">
+                                                        <td className="px-4 pt-4 pb-3 font-medium text-gray-900 leading-relaxed">{variant._attributeNames || 'Default'}</td>
+                                                        <td className="px-4 pt-4 pb-3">
+                                                            <input type="number" step="0.01" required value={variant.price} onChange={e => updateVariantField(index, 'price', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
+                                                        </td>
+                                                        <td className="px-4 pt-4 pb-3">
+                                                            <input type="text" value={variant.sku} onChange={e => updateVariantField(index, 'sku', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
+                                                        </td>
+                                                        <td className="px-4 pt-4 pb-3">
+                                                            <input type="number" required value={variant.stock_quantity} onChange={e => updateVariantField(index, 'stock_quantity', e.target.value)} className="w-full px-2 py-1.5 border rounded outline-none focus:ring-1 focus:ring-brand-primary" />
+                                                        </td>
+                                                        <td className="px-4 pt-4 pb-3">
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
+                                                                    <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImageChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                                    <Upload className="w-3 h-3 mr-1" /> Add Images
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1 mt-1 max-w-full">
+                                                                    {(variant.existingImages || []).map(img => (
+                                                                        <div key={img.id} className="relative w-12 h-12 rounded border overflow-hidden group">
+                                                                            <img src={img.url} alt="Variant" className="w-full h-full object-cover" />
+                                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                                <button type="button" onClick={() => setMainVariantImage(index, `existing-${img.id}`)} className="text-white hover:text-yellow-400">
+                                                                                    <Star className={`w-3 h-3 ${variant.mainImageKey === `existing-${img.id}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                                                                                </button>
+                                                                                <button type="button" onClick={() => removeVariantExistingImage(index, img.id)} className="text-white hover:text-red-400">
+                                                                                    <Trash2 className="w-3 h-3" />
+                                                                                </button>
+                                                                            </div>
+                                                                            {variant.mainImageKey === `existing-${img.id}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
+                                                                        </div>
+                                                                    ))}
+                                                                    {(variant.newImages || []).map((file, imgIdx) => (
+                                                                        <div key={imgIdx} className="relative w-12 h-12 rounded border border-brand-primary/50 overflow-hidden group">
+                                                                            <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                                <button type="button" onClick={() => setMainVariantImage(index, `new-${imgIdx}`)} className="text-white hover:text-yellow-400">
+                                                                                    <Star className={`w-3 h-3 ${variant.mainImageKey === `new-${imgIdx}` ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                                                                                </button>
+                                                                                <button type="button" onClick={() => removeVariantNewImage(index, imgIdx)} className="text-white hover:text-red-400">
+                                                                                    <X className="w-3 h-3" />
+                                                                                </button>
+                                                                            </div>
+                                                                            {variant.mainImageKey === `new-${imgIdx}` && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 absolute top-0.5 left-0.5 drop-shadow-md group-hover:opacity-0 transition-opacity" />}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 pt-4 pb-3">
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="relative overflow-hidden w-full h-10 flex items-center justify-center bg-gray-100 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-200 cursor-pointer">
+                                                                    <input type="file" multiple accept="video/mp4,video/webm" onChange={(e) => handleVariantVideoChange(index, e)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                                    <Upload className="w-3 h-3 mr-1" /> Add Videos
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1 mt-1 max-w-full">
+                                                                    {(variant.existingVideos || []).map(vid => (
+                                                                        <div key={vid.id} className="relative w-16 h-12 rounded border overflow-hidden group bg-black">
+                                                                            <video src={vid.url} className="w-full h-full object-contain" />
+                                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                                <button type="button" onClick={() => removeVariantExistingVideo(index, vid.id)} className="text-white hover:text-red-400">
+                                                                                    <Trash2 className="w-3 h-3" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                    {(variant.newVideos || []).map((file, vidIdx) => (
+                                                                        <div key={vidIdx} className="relative w-16 h-12 rounded border border-brand-primary/50 overflow-hidden group bg-black">
+                                                                            <video src={URL.createObjectURL(file)} className="w-full h-full object-contain" />
+                                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition gap-1">
+                                                                                <button type="button" onClick={() => removeVariantNewVideo(index, vidIdx)} className="text-white hover:text-red-400">
+                                                                                    <X className="w-3 h-3" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
 
                 {/* Sidebar Column */}
                 <div className="w-full lg:w-1/3 space-y-6">
@@ -790,7 +799,7 @@ export default function ProductForm() {
                             <div className="flex items-center justify-between border-b pb-2">
                                 <h2 className="text-lg font-bold text-gray-900">Product For</h2>
                                 {isEditMode && (
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => openAuditModal('Product For', ['product_for'])}
                                         className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
@@ -819,7 +828,7 @@ export default function ProductForm() {
                             <div className="flex items-center justify-between border-b pb-2">
                                 <h2 className="text-lg font-bold text-gray-900">Settings</h2>
                                 {isEditMode && (
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => openAuditModal('Settings', ['is_active', 'is_trending', 'is_top_seller', 'include_in_catalogue', 'show_on_website', 'ready_to_publish'])}
                                         className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
@@ -829,7 +838,7 @@ export default function ProductForm() {
                                     </button>
                                 )}
                             </div>
-                            
+
                             <div className="flex items-center justify-between pt-2">
                                 <span className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-gray-500'}`}>
                                     {isActive ? 'Published' : 'Draft'}
@@ -839,7 +848,7 @@ export default function ProductForm() {
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                                 </label>
                             </div>
-                            
+
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                                 <span className={`text-sm font-medium ${isTrending ? 'text-brand-primary' : 'text-gray-500'}`}>
                                     {isTrending ? 'Trending' : 'Not Trending'}
@@ -849,7 +858,7 @@ export default function ProductForm() {
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                                 </label>
                             </div>
-                            
+
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                                 <span className={`text-sm font-medium ${isTopSeller ? 'text-brand-primary' : 'text-gray-500'}`}>
                                     {isTopSeller ? 'Top Seller' : 'Not Top Seller'}
@@ -898,7 +907,7 @@ export default function ProductForm() {
                             <div className="flex items-center justify-between border-b pb-2">
                                 <h2 className="text-lg font-bold text-gray-900">Category</h2>
                                 {isEditMode && (
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => openAuditModal('Category', ['category_id'])}
                                         className="p-1.5 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
@@ -918,7 +927,7 @@ export default function ProductForm() {
                                                 .filter(c => c.parent_id === parentId)
                                                 .map(c => ({ ...c, children: buildTree(cats, c.id) }));
                                         };
-                                        
+
                                         const isSelectedOrAncestor = (cat, selectedId) => {
                                             if (cat.id == selectedId) return true;
                                             if (cat.children && cat.children.length > 0) {
@@ -926,13 +935,13 @@ export default function ProductForm() {
                                             }
                                             return false;
                                         };
-                                        
+
                                         const renderTreeOptions = (cats, level = 0) => {
                                             return cats.map(cat => (
                                                 <div key={cat.id} className="flex flex-col">
                                                     <label className={`flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition hover:bg-gray-50 ${categoryId == cat.id ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700'}`} style={{ marginLeft: `${level * 1.5}rem` }}>
-                                                        <input 
-                                                            type="radio" 
+                                                        <input
+                                                            type="radio"
                                                             name="category_id"
                                                             value={cat.id}
                                                             checked={categoryId == cat.id}
@@ -967,7 +976,7 @@ export default function ProductForm() {
                 </div>
             </form>
 
-            <SectionAuditModal 
+            <SectionAuditModal
                 isOpen={auditModalOpen}
                 onClose={() => setAuditModalOpen(false)}
                 title={auditModalTitle}

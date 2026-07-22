@@ -26,7 +26,7 @@ class LogController extends Controller
 
         // Fetch related logs (Variants and Images) for a specific product
         if ($request->has('related_product_id')) {
-            $query->whereIn('subject_type', [\App\Models\ProductVariant::class, \App\Models\ProductImage::class])
+            $query->whereIn('subject_type', [\App\Models\ProductVariant::class, \App\Models\ProductImage::class, \App\Models\ProductVideo::class])
                   ->where('properties->product_id', (int) $request->input('related_product_id'));
         }
 

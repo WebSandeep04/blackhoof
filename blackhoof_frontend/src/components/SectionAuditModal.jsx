@@ -5,9 +5,19 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
     if (!isOpen) return null;
 
     const relevantLogs = logs.filter(log => {
-        if (!log.properties || !log.properties.attributes) return false;
-        const changedFields = Object.keys(log.properties.attributes);
-        return changedFields.some(field => fields.includes(field));
+        if (!log.properties) return false;
+        
+        if (log.event === 'deleted' && log.properties.old) {
+            const changedFields = Object.keys(log.properties.old);
+            return changedFields.some(field => fields.includes(field));
+        }
+        
+        if (log.properties.attributes) {
+            const changedFields = Object.keys(log.properties.attributes);
+            return changedFields.some(field => fields.includes(field));
+        }
+        
+        return false;
     });
 
     const formatDate = (dateString) => {
@@ -32,6 +42,16 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                     <a href={imageUrl} target="_blank" rel="noopener noreferrer">
                         <img src={imageUrl} alt="Log image" className="h-20 object-contain rounded border border-gray-200 hover:opacity-80 transition-opacity" />
                     </a>
+                </div>
+            );
+        }
+        
+        // Render video if the key suggests it's a video path
+        if (typeof val === 'string' && (key === 'video_path' || val.match(/\.(mp4|webm|ogg)$/i))) {
+            const videoUrl = val.startsWith('http') ? val : `http://localhost:8000/storage/${val}`;
+            return (
+                <div className="flex flex-col gap-1 inline-block">
+                    <video src={videoUrl} controls className="h-20 w-auto object-contain rounded border border-gray-200" />
                 </div>
             );
         }
@@ -80,7 +100,9 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                     ) : (
                         <div className="space-y-4">
                             {relevantLogs.map((log) => {
-                                const changedAttributes = Object.entries(log.properties.attributes)
+                                // Get the relevant attributes to iterate over (new for created/updated, old for deleted)
+                                const relevantProps = log.event === 'deleted' ? log.properties.old : log.properties.attributes;
+                                const changedAttributes = Object.entries(relevantProps || {})
                                     .filter(([key]) => fields.includes(key));
                                 
                                 if (changedAttributes.length === 0) return null;
@@ -102,17 +124,19 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded ${log.event === 'created' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded ${log.event === 'created' ? 'bg-green-100 text-green-700' : log.event === 'deleted' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
                                                 {log.event}
                                             </span>
                                         </div>
                                         
                                         {/* Card Body */}
                                         <div className="p-5 space-y-5">
-                                            {changedAttributes.map(([field, newValue]) => {
+                                            {changedAttributes.map(([field, propValue]) => {
+                                                // For deleted events, we only have oldValue
                                                 const oldValue = log.properties.old ? log.properties.old[field] : null;
+                                                const newValue = log.properties.attributes ? log.properties.attributes[field] : null;
                                                 
-                                                if (JSON.stringify(oldValue) === JSON.stringify(newValue) && log.event !== 'created') return null;
+                                                if (JSON.stringify(oldValue) === JSON.stringify(newValue) && log.event !== 'created' && log.event !== 'deleted') return null;
 
                                                 return (
                                                     <div key={field} className="flex flex-col gap-2">
@@ -120,9 +144,14 @@ export default function SectionAuditModal({ isOpen, onClose, title, logs, fields
                                                             {field.replace(/_/g, ' ')}
                                                         </div>
                                                         
-                                                        {log.event === 'created' ? (
-                                                            <div className="text-sm text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words">
-                                                                {formatValue(newValue, field)}
+                                                        {log.event === 'created' || log.event === 'deleted' ? (
+                                                            <div className={`text-sm text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 break-words ${log.event === 'deleted' ? 'opacity-75 grayscale border-red-100 bg-red-50/20' : ''}`}>
+                                                                {log.event === 'deleted' ? (
+                                                                    <div className="relative">
+                                                                        <div className="text-[10px] font-bold text-red-500 absolute -top-5 left-0 uppercase">Deleted</div>
+                                                                        {formatValue(oldValue, field)}
+                                                                    </div>
+                                                                ) : formatValue(newValue, field)}
                                                             </div>
                                                         ) : (
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
