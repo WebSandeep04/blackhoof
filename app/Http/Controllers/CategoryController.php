@@ -50,6 +50,10 @@ class CategoryController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
+        $request->merge([
+            'slug' => Str::slug($request->category_for . '-' . $request->name)
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:categories,slug',

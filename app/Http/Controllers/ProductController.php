@@ -72,7 +72,9 @@ class ProductController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $request->merge([
-            'slug' => Str::slug($request->name)
+            'name' => request()->name,
+            'product_for' => request()->product_for,
+            'slug' => Str::slug(request()->product_for . '-' . request()->name)
         ]);
 
         $request->validate([

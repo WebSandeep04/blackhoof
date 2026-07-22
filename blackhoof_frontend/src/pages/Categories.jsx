@@ -12,9 +12,9 @@ export default function Categories() {
     const { flatAttributes } = useSelector(state => state.attributes);
     const { user: authUser } = useSelector(state => state.auth);
     const loading = categoriesLoading;
-    
+
     const hasPermission = (permission) => authUser?.permissions?.includes(permission);
-    
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
@@ -70,36 +70,36 @@ export default function Categories() {
             }
             formData.append('is_active', currentCategory.is_active ? 1 : 0);
             formData.append('category_for', currentCategory.category_for);
-            
+
             if (currentCategory.image) {
                 formData.append('image', currentCategory.image);
             }
 
             if (currentCategory.id) {
                 await dispatch(updateCategory({ id: currentCategory.id, categoryData: formData })).unwrap();
-                await dispatch(syncCategoryAttributes({ 
-                    id: currentCategory.id, 
+                await dispatch(syncCategoryAttributes({
+                    id: currentCategory.id,
                     attributes: currentCategory.selectedAttributes,
                     attribute_values: currentCategory.selectedAttributeValues
                 })).unwrap();
             } else {
                 const newCat = await dispatch(createCategory(formData)).unwrap();
                 if (currentCategory.selectedAttributes.length > 0 || currentCategory.selectedAttributeValues.length > 0) {
-                    await dispatch(syncCategoryAttributes({ 
-                        id: newCat.id, 
+                    await dispatch(syncCategoryAttributes({
+                        id: newCat.id,
                         attributes: currentCategory.selectedAttributes,
                         attribute_values: currentCategory.selectedAttributeValues
                     })).unwrap();
                 }
             }
-            
+
             setIsSubmitting(false);
             setIsFormOpen(false);
-            
+
             // Refresh lists
             dispatch(fetchCategories({ page, search: searchQuery }));
             dispatch(fetchCategories({ all: true }));
-            
+
             Swal.fire({
                 title: 'Success!',
                 text: 'Category saved successfully.',
@@ -110,7 +110,7 @@ export default function Categories() {
         } catch (error) {
             setIsSubmitting(false);
             console.error("Error saving category:", error);
-            
+
             // Format validation errors if present
             let errorMessage = 'There was a problem saving the category.';
             if (error.errors) {
@@ -169,8 +169,8 @@ export default function Categories() {
     };
 
     const openForm = (category = { id: null, name: '', slug: '', parent_id: '', is_active: true, category_for: 'blackhoof', image: null, imageUrl: null, attributes: [], attribute_values: [] }) => {
-        setCurrentCategory({ 
-            ...category, 
+        setCurrentCategory({
+            ...category,
             parent_id: category.parent_id || '',
             is_active: category.is_active === undefined ? true : category.is_active,
             category_for: category.category_for || 'blackhoof',
@@ -226,7 +226,7 @@ export default function Categories() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-4 w-4 text-gray-400" />
                     </div>
-                    <input 
+                    <input
                         type="text"
                         placeholder="Search categories..."
                         value={searchQuery}
@@ -235,7 +235,7 @@ export default function Categories() {
                     />
                 </div>
                 {hasPermission('create categories') && (
-                    <button 
+                    <button
                         onClick={() => openForm()}
                         className="p-2 bg-brand-primary text-white rounded-full hover:bg-brand-hover transition shadow-sm"
                         title="Add Category"
@@ -250,25 +250,25 @@ export default function Categories() {
                     <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-3xl">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">{currentCategory.id ? 'Edit' : 'Create'} Category</h2>
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Left Column: Basic Info */}
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             required
                                             value={currentCategory.name}
                                             onChange={handleNameChange}
                                             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none"
                                         />
                                     </div>
-                                    
+
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             required
                                             value={currentCategory.slug}
                                             onChange={(e) => setCurrentCategory({ ...currentCategory, slug: e.target.value })}
@@ -277,24 +277,8 @@ export default function Categories() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
-                                        <select 
-                                            value={currentCategory.parent_id}
-                                            onChange={(e) => setCurrentCategory({ ...currentCategory, parent_id: e.target.value })}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
-                                        >
-                                            <option value="">None (Top Level)</option>
-                                            {flatCategories
-                                                .filter(c => c.id !== currentCategory.id)
-                                                .map(cat => (
-                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Category For</label>
-                                        <select 
+                                        <select
                                             value={currentCategory.category_for}
                                             onChange={(e) => setCurrentCategory({ ...currentCategory, category_for: e.target.value })}
                                             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
@@ -304,9 +288,27 @@ export default function Categories() {
                                         </select>
                                     </div>
 
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+                                        <select
+                                            value={currentCategory.parent_id}
+                                            onChange={(e) => setCurrentCategory({ ...currentCategory, parent_id: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
+                                        >
+                                            <option value="">None (Top Level)</option>
+                                            {flatCategories
+                                                .filter(cat => cat.id !== currentCategory.id && cat.category_for === currentCategory.category_for)
+                                                .map(cat => (
+                                                    <option key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+
                                     <div className="flex items-center pt-2">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             id="isActive"
                                             checked={currentCategory.is_active}
                                             onChange={(e) => setCurrentCategory({ ...currentCategory, is_active: e.target.checked })}
@@ -317,8 +319,8 @@ export default function Categories() {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                                        <input 
-                                            type="file" 
+                                        <input
+                                            type="file"
                                             accept="image/*"
                                             onChange={handleImageChange}
                                             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary outline-none bg-white"
@@ -342,12 +344,12 @@ export default function Categories() {
                                         </div>
                                         <p className="text-xs text-gray-500">Select the attributes that apply to products in this category.</p>
                                     </div>
-                                    
+
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <Search className="h-4 w-4 text-gray-400" />
                                         </div>
-                                        <input 
+                                        <input
                                             type="text"
                                             placeholder="Search attributes..."
                                             value={attributeSearchQuery}
@@ -357,20 +359,20 @@ export default function Categories() {
                                     </div>
 
                                     <div className="flex items-center justify-end gap-2 px-1">
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onClick={() => {
                                                 const allIds = filteredAttributes.map(a => a.id);
                                                 const allValueIds = filteredAttributes.flatMap(a => a.values ? a.values.map(v => v.id) : []);
-                                                
+
                                                 const current = new Set(currentCategory.selectedAttributes || []);
                                                 const currentValues = new Set(currentCategory.selectedAttributeValues || []);
-                                                
+
                                                 allIds.forEach(id => current.add(id));
                                                 allValueIds.forEach(id => currentValues.add(id));
-                                                
-                                                setCurrentCategory(prev => ({ 
-                                                    ...prev, 
+
+                                                setCurrentCategory(prev => ({
+                                                    ...prev,
                                                     selectedAttributes: Array.from(current),
                                                     selectedAttributeValues: Array.from(currentValues)
                                                 }));
@@ -380,14 +382,14 @@ export default function Categories() {
                                             Select All
                                         </button>
                                         <span className="text-gray-300 text-xs">|</span>
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onClick={() => {
                                                 const filteredIds = new Set(filteredAttributes.map(a => a.id));
                                                 const filteredValueIds = new Set(filteredAttributes.flatMap(a => a.values ? a.values.map(v => v.id) : []));
-                                                
-                                                setCurrentCategory(prev => ({ 
-                                                    ...prev, 
+
+                                                setCurrentCategory(prev => ({
+                                                    ...prev,
                                                     selectedAttributes: (prev.selectedAttributes || []).filter(id => !filteredIds.has(id)),
                                                     selectedAttributeValues: (prev.selectedAttributeValues || []).filter(id => !filteredValueIds.has(id))
                                                 }));
@@ -400,27 +402,26 @@ export default function Categories() {
 
                                     <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50 grid grid-cols-1 gap-2 content-start">
                                         {filteredAttributes.map(attr => (
-                                            <div key={attr.id} className={`flex flex-col p-2 rounded border transition ${
-                                                (currentCategory.selectedAttributes || []).includes(attr.id)
+                                            <div key={attr.id} className={`flex flex-col p-2 rounded border transition ${(currentCategory.selectedAttributes || []).includes(attr.id)
                                                 ? 'bg-brand-primary/5 border-brand-primary'
                                                 : 'bg-white border-gray-200 hover:border-brand-primary/50'
-                                            }`}>
+                                                }`}>
                                                 <label className="flex items-center gap-2 cursor-pointer font-medium text-gray-800">
-                                                    <input 
-                                                        type="checkbox" 
+                                                    <input
+                                                        type="checkbox"
                                                         checked={(currentCategory.selectedAttributes || []).includes(attr.id)}
                                                         onChange={() => toggleAttribute(attr.id)}
                                                         className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
                                                     />
                                                     <span className="text-sm truncate" title={attr.name}>{attr.name}</span>
                                                 </label>
-                                                
+
                                                 {(currentCategory.selectedAttributes || []).includes(attr.id) && attr.values && attr.values.length > 0 && (
                                                     <div className="mt-2 ml-6 flex flex-col gap-1.5 border-l-2 border-brand-primary/20 pl-3">
                                                         {attr.values.map(val => (
                                                             <label key={val.id} className="flex items-center gap-2 cursor-pointer text-gray-600">
-                                                                <input 
-                                                                    type="checkbox" 
+                                                                <input
+                                                                    type="checkbox"
                                                                     checked={(currentCategory.selectedAttributeValues || []).includes(val.id)}
                                                                     onChange={() => toggleAttributeValue(val.id)}
                                                                     className="w-3.5 h-3.5 text-brand-primary rounded focus:ring-brand-primary"
@@ -451,23 +452,23 @@ export default function Categories() {
                 </div>
             )}
 
-            <DataTable 
+            <DataTable
                 columns={[
                     { header: 'ID', key: 'id' },
-                    { 
-                        header: 'Image', 
+                    {
+                        header: 'Image',
                         key: 'image',
                         render: (category) => (
-                            category.image ? 
-                            <img src={`http://localhost:8000/storage/${category.image}`} alt={category.name} className="h-10 w-10 object-cover rounded-md border" /> 
-                            : <div className="h-10 w-10 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs">None</div>
+                            category.image ?
+                                <img src={`http://localhost:8000/storage/${category.image}`} alt={category.name} className="h-10 w-10 object-cover rounded-md border" />
+                                : <div className="h-10 w-10 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs">None</div>
                         )
                     },
                     { header: 'Name', key: 'name', cellClassName: 'font-medium text-black' },
                     { header: 'Slug', key: 'slug', cellClassName: 'text-gray-500' },
-                    { 
-                        header: 'Parent', 
-                        key: 'parent', 
+                    {
+                        header: 'Parent',
+                        key: 'parent',
                         render: (category) => (
                             <span className="text-gray-600">
                                 {category.parent ? category.parent.name : <span className="text-gray-400 italic">None</span>}

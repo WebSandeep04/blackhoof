@@ -577,37 +577,6 @@ export default function ProductForm() {
                                 </div>
                             </div>
 
-                            <div className="pb-4 mt-4 border-t pt-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Product Videos</label>
-                                <div className="flex flex-col gap-3">
-                                    <div className="relative overflow-hidden w-full h-12 flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:border-brand-primary/50 transition cursor-pointer">
-                                        <input type="file" multiple accept="video/mp4,video/webm" onChange={handleVideoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                        <Upload className="w-4 h-4 mr-2" /> Upload Videos
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {existingVideos.map(vid => (
-                                            <div key={vid.id} className="relative w-32 h-24 rounded-lg border overflow-hidden group bg-black">
-                                                <video src={vid.url} className="w-full h-full object-contain" />
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                                    <button type="button" onClick={() => removeExistingVideo(vid.id)} className="text-white hover:text-red-400 p-2 bg-black/50 rounded-full">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {videos.map((file, idx) => (
-                                            <div key={idx} className="relative w-32 h-24 rounded-lg border border-brand-primary overflow-hidden group bg-black">
-                                                <video src={URL.createObjectURL(file)} className="w-full h-full object-contain" />
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                                    <button type="button" onClick={() => removeNewVideo(idx)} className="text-white hover:text-red-400 p-2 bg-black/50 rounded-full">
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -641,8 +610,8 @@ export default function ProductForm() {
                                                     type="button"
                                                     onClick={() => toggleAttribute(attr.id)}
                                                     className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${selectedAttributes.includes(attr.id)
-                                                            ? 'bg-brand-primary/10 border-brand-primary text-brand-primary'
-                                                            : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                                                        ? 'bg-brand-primary/10 border-brand-primary text-brand-primary'
+                                                        : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
                                                         }`}
                                                 >
                                                     {attr.name}
