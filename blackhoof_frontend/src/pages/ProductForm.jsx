@@ -54,9 +54,9 @@ export default function ProductForm() {
     const [existingVideos, setExistingVideos] = useState([]);
 
     // Simple Product Data
-    const [simplePrice, setSimplePrice] = useState('');
+    const [simplePrice, setSimplePrice] = useState('1');
     const [simpleSku, setSimpleSku] = useState('');
-    const [simpleStock, setSimpleStock] = useState('');
+    const [simpleStock, setSimpleStock] = useState('1');
 
     // Variable Product Data
     const [selectedAttributes, setSelectedAttributes] = useState([]); // Array of attribute IDs

@@ -53,7 +53,7 @@
                 </div>
                 <div class="product-details">
                     <div class="product-desc">
-                        {{ $product->short_description }}
+                        {!! $product->short_description !!}
                     </div>
 
                     @php
