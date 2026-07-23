@@ -87,6 +87,17 @@ export default function AuditLogs({ isTab = false }) {
             );
         }
 
+        // Render video if the key suggests it's a video path
+        if (typeof val === 'string' && (key === 'video_path' || val.match(/\.(mp4|webm|ogg)$/i))) {
+            const videoUrl = val.startsWith('http') ? val : `http://localhost:8000/storage/${val}`;
+            return (
+                <div className="flex flex-col gap-1">
+                    <video src={videoUrl} controls className="h-16 w-16 object-cover rounded border border-gray-200" />
+                    <span className="text-[10px] text-gray-500 truncate max-w-[150px]" title={val}>{val.split('/').pop()}</span>
+                </div>
+            );
+        }
+
         if (typeof val === 'object') return JSON.stringify(val);
         if (typeof val === 'string') {
             return stripHtml(val);
